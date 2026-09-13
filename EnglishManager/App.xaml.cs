@@ -1,5 +1,4 @@
 using System.Windows;
-using Application = System.Windows.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using English.Entity.Repositories;
@@ -7,51 +6,39 @@ using English.Entity.Services;
 using English.Repository.Data;
 using English.Repository.Repositories;
 using English.Service.Services;
-using English.ViewModel.ViewModels;
-using EnglishLocker.Views;
-using EnglishLocker.Services;
+using EnglishManager.Services;
+using EnglishManager.ViewModels;
+using EnglishManager.Views;
 
-namespace EnglishLocker;
+namespace EnglishManager;
 
 /// <summary>
-/// Điểm khởi động ứng dụng EnglishLocker.
-///
-/// Sử dụng Microsoft.Extensions.DependencyInjection để cấu hình IoC/DI,
-/// và ủy quyền mở toàn bộ cửa sổ đa màn hình cho IWindowManagerService.
+/// Điểm khởi động ứng dụng quản lý EnglishManager (Back-office Content Management).
 /// </summary>
 public partial class App : Application
 {
-    /// <summary>DI container toàn cục.</summary>
     private ServiceProvider? _serviceProvider;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        // 1. Cấu hình và xây dựng DI Container
         var services = new ServiceCollection();
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
-        // 2. Auto-migrate database (đảm bảo DB sẵn sàng trước khi mở cửa sổ)
+        // 1. Tự động kiểm tra và migrate cơ sở dữ liệu SQLite
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             dbContext.Database.Migrate();
         }
 
-        // 3. Đăng ký ứng dụng làm Custom Shell nếu chưa được cấu hình
-        var shellManager = _serviceProvider.GetRequiredService<IShellManagementService>();
-        shellManager.CheckAndInstallCustomShell();
-
-        // 4. Khởi tạo toàn bộ cửa sổ đa màn hình thông qua WindowManagerService
-        var windowManager = _serviceProvider.GetRequiredService<IWindowManagerService>();
-        windowManager.OpenAllWindows();
+        // 2. Khởi tạo và hiển thị duy nhất 1 cửa sổ MainWindow
+        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
     }
 
-    /// <summary>
-    /// Đăng ký các dependencies vào ServiceCollection.
-    /// </summary>
     private static void ConfigureServices(IServiceCollection services)
     {
         // ── Database ──
@@ -73,26 +60,24 @@ public partial class App : Application
         services.AddScoped<IStudyService, StudyService>();
         services.AddScoped<IEmergencyLogService, EmergencyLogService>();
         services.AddScoped<IAppConfigurationService, AppConfigurationService>();
+        services.AddScoped<IExcelImportService, ExcelImportService>();
 
-        // ── Services (System) ──
-        services.AddSingleton<ISystemControlService, SystemControlService>();
-        services.AddSingleton<IHookService, KeyboardHookService>();
-        services.AddSingleton<IWindowManagerService, WindowManagerService>();
-        services.AddSingleton<IShellManagementService, ShellManagementService>();
+        // ── In-App Dialog Service (Modal overlay trong giao diện) ──
+        services.AddSingleton<InAppDialogService>();
+        services.AddSingleton<IInAppDialogService>(sp => sp.GetRequiredService<InAppDialogService>());
 
-        // ── ViewModels ──
+        // ── ViewModels (Quản lý nội bộ trong EnglishManager) ──
+        services.AddTransient<DeckManagementViewModel>();
+        services.AddTransient<MaterialManagementViewModel>();
+        services.AddTransient<QuestionManagementViewModel>();
         services.AddTransient<MainViewModel>();
-        services.AddTransient<StartupWarningViewModel>();
 
-        // ── Views ──
+        // ── Views (Single Window) ──
         services.AddTransient<MainWindow>();
-        services.AddTransient<BlackoutWindow>();
-        services.AddTransient<StartupWarningWindow>();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        // Dispose DI container để giải phóng tài nguyên hệ thống (bao gồm hook bàn phím)
         _serviceProvider?.Dispose();
         base.OnExit(e);
     }

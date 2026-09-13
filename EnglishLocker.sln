@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "English.ViewModel", "Englis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnglishLocker", "EnglishLocker\EnglishLocker.csproj", "{815E067A-9380-4AC6-A0B7-25B088F2AA75}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnglishManager", "EnglishManager\EnglishManager.csproj", "{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{815E067A-9380-4AC6-A0B7-25B088F2AA75}.Release|x64.Build.0 = Release|Any CPU
 		{815E067A-9380-4AC6-A0B7-25B088F2AA75}.Release|x86.ActiveCfg = Release|Any CPU
 		{815E067A-9380-4AC6-A0B7-25B088F2AA75}.Release|x86.Build.0 = Release|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Debug|x64.Build.0 = Debug|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Debug|x86.Build.0 = Debug|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Release|x64.ActiveCfg = Release|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Release|x64.Build.0 = Release|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Release|x86.ActiveCfg = Release|Any CPU
+		{9EAFA3F1-1FE9-4820-A10F-4CC11FFB1774}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

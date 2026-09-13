@@ -1,0 +1,1161 @@
+<Window x:Class="EnglishManager.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:conv="clr-namespace:EnglishManager.Converters"
+        mc:Ignorable="d"
+        Title="English Manager - Quản lý Học tập &amp; Nội dung Từ vựng"
+        Height="780" Width="1280"
+        MinHeight="680" MinWidth="1050"
+        WindowStartupLocation="CenterScreen"
+        FontFamily="Segoe UI"
+        Background="#F1F5F9">
+
+    <Window.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter" />
+        <conv:CategoryTypeToStringConverter x:Key="CategoryConv" />
+        <conv:TestTypeToStringConverter x:Key="TestTypeConv" />
+        <conv:BoolToStatusTextConverter x:Key="StatusTextConv" />
+        <conv:BoolToStatusColorConverter x:Key="StatusColorConv" />
+        <conv:DialogTypeToColorConverter x:Key="DialogColorConv" />
+        <conv:DialogTypeToIconConverter x:Key="DialogIconConv" />
+        <conv:InverseBooleanConverter x:Key="InverseBoolConverter" />
+        <conv:ValidationColorConverter x:Key="ValidColorConv" />
+
+        <!-- Styles -->
+        <Style x:Key="CardStyle" TargetType="Border">
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Direction="270" Color="#0F172A" Opacity="0.05" />
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#2563EB" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1D4ED8" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#E2E8F0" />
+            <Setter Property="Foreground" Value="#1E293B" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="14,8" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#CBD5E1" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="DangerButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#EF4444" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Padding" Value="12,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#DC2626" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="BorderBrush" Value="#CBD5E1" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FFFFFF" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <!-- MAIN APP CONTENT (Single Window) -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- SIDEBAR NAVIGATION -->
+            <Border Grid.Column="0" Background="#1E293B">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- App Logo / Title -->
+                    <StackPanel Grid.Row="0" Margin="20,24,20,20">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="36" Height="36" Background="#3B82F6" CornerRadius="8">
+                                <TextBlock Text="EN" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="EnglishManager" Foreground="#FFFFFF" FontWeight="Bold" FontSize="16" />
+                                <TextBlock Text="Quản trị dữ liệu học" Foreground="#94A3B8" FontSize="11" />
+                            </StackPanel>
+                        </StackPanel>
+                        <Separator Margin="0,16,0,0" Background="#334155" />
+                    </StackPanel>
+
+                    <!-- Navigation Items -->
+                    <StackPanel Grid.Row="1" Margin="12,8,12,12">
+                        <!-- Tab 0: Decks -->
+                        <Button Margin="0,0,0,8" Padding="14,12" HorizontalContentAlignment="Left" Cursor="Hand"
+                                Command="{Binding SelectDecksTabCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Name="border" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedTabIndex}" Value="0">
+                                                        <Setter TargetName="border" Property="Background" Value="#3B82F6" />
+                                                    </DataTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                            <Grid HorizontalAlignment="Stretch" Width="190">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="📁" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Grid.Column="1" Text="Bộ đề từ vựng" Foreground="#F8FAFC" FontWeight="Medium" FontSize="14" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Background="#475569" CornerRadius="10" Padding="6,2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DeckVM.Decks.Count}" Foreground="#FFFFFF" FontSize="11" FontWeight="Bold" />
+                                </Border>
+                            </Grid>
+                        </Button>
+
+                        <!-- Tab 1: Materials -->
+                        <Button Margin="0,0,0,8" Padding="14,12" HorizontalContentAlignment="Left" Cursor="Hand"
+                                Command="{Binding SelectMaterialsTabCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Name="border" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedTabIndex}" Value="1">
+                                                        <Setter TargetName="border" Property="Background" Value="#3B82F6" />
+                                                    </DataTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                            <Grid HorizontalAlignment="Stretch" Width="190">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="📖" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Grid.Column="1" Text="Từ mới &amp; Cụm từ" Foreground="#F8FAFC" FontWeight="Medium" FontSize="14" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Background="#475569" CornerRadius="10" Padding="6,2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding MaterialVM.AllMaterials.Count}" Foreground="#FFFFFF" FontSize="11" FontWeight="Bold" />
+                                </Border>
+                            </Grid>
+                        </Button>
+
+                        <!-- Tab 2: Questions -->
+                        <Button Margin="0,0,0,8" Padding="14,12" HorizontalContentAlignment="Left" Cursor="Hand"
+                                Command="{Binding SelectQuestionsTabCommand}">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border Name="border" Background="{TemplateBinding Background}" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                                    <ContentPresenter />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedTabIndex}" Value="2">
+                                                        <Setter TargetName="border" Property="Background" Value="#3B82F6" />
+                                                    </DataTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                            <Grid HorizontalAlignment="Stretch" Width="190">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="❓" FontSize="16" VerticalAlignment="Center" Margin="0,0,10,0" />
+                                <TextBlock Grid.Column="1" Text="Ngân hàng câu hỏi" Foreground="#F8FAFC" FontWeight="Medium" FontSize="14" VerticalAlignment="Center" />
+                                <Border Grid.Column="2" Background="#475569" CornerRadius="10" Padding="6,2" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding QuestionVM.AllQuestions.Count}" Foreground="#FFFFFF" FontSize="11" FontWeight="Bold" />
+                                </Border>
+                            </Grid>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Footer Info & Database Switcher -->
+                    <Border Grid.Row="2" Margin="12,0,12,16" Background="#0F172A" CornerRadius="10" Padding="12" BorderBrush="#334155" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="CƠ SỞ DỮ LIỆU ĐANG DÙNG" Foreground="#94A3B8" FontSize="10" FontWeight="Bold" />
+
+                            <TextBlock Text="{Binding DatabaseFileName}" Foreground="#38BDF8" FontWeight="Bold" FontSize="13" Margin="0,4,0,2"
+                                       TextTrimming="CharacterEllipsis" ToolTip="{Binding CurrentDatabasePath}" />
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <Ellipse Width="7" Height="7" Fill="#10B981" Margin="0,0,6,0" VerticalAlignment="Center" />
+                                <TextBlock Text="Đang kết nối trực tiếp" Foreground="#10B981" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Buttons: Chọn file, Tạo mới, Mặc định -->
+                            <Button Content="📂 Chọn file SQLite..." Margin="0,0,0,6" Padding="8,6"
+                                    Style="{StaticResource PrimaryButtonStyle}" FontSize="12"
+                                    Command="{Binding SelectDatabaseFileCommand}" />
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="6" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Button Grid.Column="0" Content="➕ Tạo mới" Padding="4,5"
+                                        Style="{StaticResource SecondaryButtonStyle}" FontSize="11"
+                                        Command="{Binding CreateDatabaseFileCommand}" />
+                                <Button Grid.Column="2" Content="🔄 Mặc định" Padding="4,5"
+                                        Style="{StaticResource SecondaryButtonStyle}" FontSize="11"
+                                        Command="{Binding ResetToDefaultDatabaseCommand}"
+                                        IsEnabled="{Binding IsDefaultDatabase, Converter={StaticResource InverseBoolConverter}}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- MAIN WORKSPACE CONTENT -->
+            <Grid Grid.Column="1">
+                <!-- TAB 0: QUẢN LÝ BỘ ĐỀ (DECKS) -->
+                <Grid Margin="20" DataContext="{Binding DeckVM}">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.SelectedTabIndex, RelativeSource={RelativeSource AncestorType=Window}}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Quản lý Bộ đề (Decks)" FontSize="22" FontWeight="Bold" Foreground="#0F172A" />
+                                <Border Background="#E0F2FE" CornerRadius="12" Padding="8,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DataContext.DatabaseFileName, RelativeSource={RelativeSource AncestorType=Window}, StringFormat='💾 {0}'}"
+                                               Foreground="#0369A1" FontWeight="SemiBold" FontSize="11" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Thêm, sửa, xóa và quản lý trạng thái các bộ đề từ vựng" Foreground="#64748B" FontSize="13" Margin="0,2,0,0" />
+                        </StackPanel>
+                        <!-- Search Box -->
+                        <Border Grid.Column="1" Background="#FFFFFF" CornerRadius="6" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,12,0" Width="260">
+                            <Grid>
+                                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,6" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" />
+                                <TextBlock Text="Tìm kiếm bộ đề..." Foreground="#94A3B8" IsHitTestVisible="False"
+                                           Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SearchText}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+                        <!-- New Deck Button -->
+                        <Button Grid.Column="2" Content="+ Thêm bộ đề mới" Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding StartCreateCommand}" />
+                    </Grid>
+
+                    <!-- Content (List + Form) -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="7*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="5*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Decks DataGrid -->
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <DataGrid ItemsSource="{Binding FilteredDecks}" SelectedItem="{Binding SelectedDeck}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Single"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#F1F5F9" Background="#FFFFFF" BorderThickness="0"
+                                      RowHeight="44" FontSize="13">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Tên bộ đề" Binding="{Binding Name}" Width="2*" FontWeight="SemiBold" />
+                                    <DataGridTextColumn Header="Mô tả" Binding="{Binding Description}" Width="3*" />
+                                    <DataGridTextColumn Header="Số từ" Binding="{Binding MaterialCount}" Width="80" />
+                                    <DataGridTemplateColumn Header="Trạng thái" Width="110">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left"
+                                                        Background="#F1F5F9">
+                                                    <TextBlock Text="{Binding IsActive, Converter={StaticResource StatusTextConv}}"
+                                                               Foreground="{Binding IsActive, Converter={StaticResource StatusColorConv}}"
+                                                               FontWeight="SemiBold" FontSize="11" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTemplateColumn Header="Thao tác" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="Sửa" Margin="0,0,6,0" Padding="8,4"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding DataContext.StartEditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Content="Xóa" Padding="8,4"
+                                                            Style="{StaticResource DangerButtonStyle}"
+                                                            Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <!-- Form Detail / Editor -->
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding FormTitle}" FontSize="16" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,16" />
+
+                                    <!-- Tên bộ đề -->
+                                    <TextBlock Text="Tên bộ đề (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormName, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,14" />
+
+                                    <!-- Mô tả -->
+                                    <TextBlock Text="Mô tả / Ghi chú" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormDescription, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Height="80" TextWrapping="Wrap"
+                                             AcceptsReturn="True" Style="{StaticResource ModernTextBox}" Margin="0,0,0,14" />
+
+                                    <!-- Kích hoạt -->
+                                    <CheckBox Content="Kích hoạt bộ đề này" IsChecked="{Binding FormIsActive}"
+                                              IsEnabled="{Binding IsEditing}" FontWeight="Medium" Foreground="#334155" Margin="0,0,0,24" />
+
+                                    <!-- Action Buttons -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                                Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisConverter}}">
+                                        <Button Content="Hủy" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                                                Command="{Binding CancelEditCommand}" />
+                                        <Button Content="Lưu bộ đề" Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding SaveCommand}" />
+                                    </StackPanel>
+
+                                    <!-- Button khi chỉ đang xem -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SelectedDeck}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Button Content="Chỉnh sửa thông tin" Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding StartEditCommand}" CommandParameter="{Binding SelectedDeck}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- TAB 1: QUẢN LÝ TỪ MỚI & CỤM TỪ (MATERIALS) -->
+                <Grid Margin="20" DataContext="{Binding MaterialVM}">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.SelectedTabIndex, RelativeSource={RelativeSource AncestorType=Window}}" Value="1">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Quản lý Từ mới &amp; Cụm từ (Learning Materials)" FontSize="22" FontWeight="Bold" Foreground="#0F172A" />
+                                <Border Background="#E0F2FE" CornerRadius="12" Padding="8,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DataContext.DatabaseFileName, RelativeSource={RelativeSource AncestorType=Window}, StringFormat='💾 {0}'}"
+                                               Foreground="#0369A1" FontWeight="SemiBold" FontSize="11" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Quản lý chi tiết danh sách từ vựng, phiên âm, câu ví dụ và nghĩa" Foreground="#64748B" FontSize="13" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <!-- Filter Deck ComboBox -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0">
+                            <TextBlock Text="Lọc theo bộ đề:" VerticalAlignment="Center" Foreground="#475569" FontWeight="Medium" Margin="0,0,8,0" />
+                            <ComboBox ItemsSource="{Binding Decks}" SelectedItem="{Binding FilterDeck}" DisplayMemberPath="Name"
+                                      Width="180" Height="32" VerticalContentAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Search Box -->
+                        <Border Grid.Column="2" Background="#FFFFFF" CornerRadius="6" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,12,0" Width="220">
+                            <Grid>
+                                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,6" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" />
+                                <TextBlock Text="Tìm từ vựng / nghĩa..." Foreground="#94A3B8" IsHitTestVisible="False"
+                                           Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SearchText}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Content="📥 Import Excel..." Margin="0,0,8,0" Padding="12,8"
+                                    Background="#0D9488" Foreground="#FFFFFF" FontWeight="SemiBold"
+                                    Cursor="Hand" BorderThickness="0"
+                                    Command="{Binding OpenImportModalCommand}">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                            <Button Content="+ Thêm từ mới" Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding StartCreateCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Content (List + Form) -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="7*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="5*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Materials DataGrid -->
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <DataGrid ItemsSource="{Binding FilteredMaterials}" SelectedItem="{Binding SelectedMaterial}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Single"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#F1F5F9" Background="#FFFFFF" BorderThickness="0"
+                                      RowHeight="44" FontSize="13">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Từ vựng" Binding="{Binding Term}" Width="1.5*" FontWeight="Bold" />
+                                    <DataGridTextColumn Header="Phiên âm" Binding="{Binding Phonetics}" Width="1.2*" Foreground="#64748B" />
+                                    <DataGridTextColumn Header="Nghĩa tiếng Việt" Binding="{Binding Meaning}" Width="2*" />
+                                    <DataGridTemplateColumn Header="Loại" Width="130">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#EFF6FF">
+                                                    <TextBlock Text="{Binding CategoryType, Converter={StaticResource CategoryConv}}"
+                                                               Foreground="#1D4ED8" FontWeight="SemiBold" FontSize="11" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Số câu hỏi" Binding="{Binding QuestionCount}" Width="80" />
+                                    <DataGridTemplateColumn Header="Thao tác" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="Sửa" Margin="0,0,6,0" Padding="8,4"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding DataContext.StartEditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Content="Xóa" Padding="8,4"
+                                                            Style="{StaticResource DangerButtonStyle}"
+                                                            Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <!-- Form Detail / Editor -->
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding FormTitle}" FontSize="16" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,16" />
+
+                                    <!-- Bộ đề -->
+                                    <TextBlock Text="Thuộc bộ đề (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <ComboBox ItemsSource="{Binding Decks}" SelectedValue="{Binding FormDeckId}"
+                                              SelectedValuePath="Id" DisplayMemberPath="Name"
+                                              IsEnabled="{Binding IsEditing}" Height="34" Margin="0,0,0,12" />
+
+                                    <!-- Từ vựng -->
+                                    <TextBlock Text="Từ vựng / Cụm từ (Term) (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormTerm, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12" />
+
+                                    <!-- Phiên âm -->
+                                    <TextBlock Text="Phiên âm IPA (Phonetics)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormPhonetics, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12" />
+
+                                    <!-- Nghĩa -->
+                                    <TextBlock Text="Nghĩa / Giải thích (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormMeaning, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Height="60" TextWrapping="Wrap"
+                                             AcceptsReturn="True" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12" />
+
+                                    <!-- Loại từ -->
+                                    <TextBlock Text="Phân loại (Category Type)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <ComboBox ItemsSource="{Binding AvailableCategories}" SelectedItem="{Binding FormCategoryType}"
+                                              IsEnabled="{Binding IsEditing}" Height="34" Margin="0,0,0,12">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource CategoryConv}}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <!-- Ngữ cảnh / Tag -->
+                                    <TextBlock Text="Thẻ ngữ cảnh (Context Tag)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormContextTag, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12" />
+
+                                    <!-- Câu ví dụ -->
+                                    <TextBlock Text="Câu ví dụ thực tế (Example Sentence)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormExampleSentence, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Height="60" TextWrapping="Wrap"
+                                             AcceptsReturn="True" Style="{StaticResource ModernTextBox}" Margin="0,0,0,20" />
+
+                                    <!-- Action Buttons -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                                Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisConverter}}">
+                                        <Button Content="Hủy" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                                                Command="{Binding CancelEditCommand}" />
+                                        <Button Content="Lưu từ vựng" Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding SaveCommand}" />
+                                    </StackPanel>
+
+                                    <!-- Button khi chỉ đang xem -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SelectedMaterial}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Button Content="Chỉnh sửa từ này" Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding StartEditCommand}" CommandParameter="{Binding SelectedMaterial}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+
+                <!-- TAB 2: QUẢN LÝ CÂU HỎI (QUESTIONS) -->
+                <Grid Margin="20" DataContext="{Binding QuestionVM}">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding DataContext.SelectedTabIndex, RelativeSource={RelativeSource AncestorType=Window}}" Value="2">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Ngân hàng Câu hỏi (Questions)" FontSize="22" FontWeight="Bold" Foreground="#0F172A" />
+                                <Border Background="#E0F2FE" CornerRadius="12" Padding="8,3" Margin="12,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding DataContext.DatabaseFileName, RelativeSource={RelativeSource AncestorType=Window}, StringFormat='💾 {0}'}"
+                                               Foreground="#0369A1" FontWeight="SemiBold" FontSize="11" />
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="Tạo và quản lý các câu hỏi kiểm tra, dạng bài và phương án trắc nghiệm" Foreground="#64748B" FontSize="13" Margin="0,2,0,0" />
+                        </StackPanel>
+
+                        <!-- Filter Deck -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock Text="Bộ đề:" VerticalAlignment="Center" Foreground="#475569" FontWeight="Medium" Margin="0,0,6,0" />
+                            <ComboBox ItemsSource="{Binding Decks}" SelectedItem="{Binding FilterDeck}" DisplayMemberPath="Name"
+                                      Width="140" Height="32" VerticalContentAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Filter Material -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
+                            <TextBlock Text="Từ vựng:" VerticalAlignment="Center" Foreground="#475569" FontWeight="Medium" Margin="0,0,6,0" />
+                            <ComboBox ItemsSource="{Binding Materials}" SelectedItem="{Binding FilterMaterial}" DisplayMemberPath="Term"
+                                      Width="140" Height="32" VerticalContentAlignment="Center" />
+                        </StackPanel>
+
+                        <!-- Search Box -->
+                        <Border Grid.Column="3" Background="#FFFFFF" CornerRadius="6" BorderBrush="#CBD5E1" BorderThickness="1" Margin="0,0,12,0" Width="180">
+                            <Grid>
+                                <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                                         Padding="8,6" BorderThickness="0" Background="Transparent" VerticalContentAlignment="Center" />
+                                <TextBlock Text="Tìm câu hỏi / đáp án..." Foreground="#94A3B8" IsHitTestVisible="False"
+                                           Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SearchText}" Value="">
+                                                    <Setter Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+
+                        <!-- New Question Button -->
+                        <Button Grid.Column="4" Content="+ Thêm câu hỏi" Style="{StaticResource PrimaryButtonStyle}"
+                                Command="{Binding StartCreateCommand}" />
+                    </Grid>
+
+                    <!-- Content (List + Form) -->
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="6.5*" />
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="5.5*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Questions DataGrid -->
+                        <Border Grid.Column="0" Style="{StaticResource CardStyle}">
+                            <DataGrid ItemsSource="{Binding FilteredQuestions}" SelectedItem="{Binding SelectedQuestion}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Single"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#F1F5F9" Background="#FFFFFF" BorderThickness="0"
+                                      RowHeight="44" FontSize="13">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Đề bài / Câu hỏi" Binding="{Binding Prompt}" Width="3*" FontWeight="SemiBold" />
+                                    <DataGridTemplateColumn Header="Dạng bài" Width="140">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Background="#F0FDF4">
+                                                    <TextBlock Text="{Binding TestType, Converter={StaticResource TestTypeConv}}"
+                                                               Foreground="#15803D" FontWeight="SemiBold" FontSize="11" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                    <DataGridTextColumn Header="Đáp án đúng" Binding="{Binding CorrectAnswer}" Width="1.5*" Foreground="#2563EB" FontWeight="SemiBold" />
+                                    <DataGridTemplateColumn Header="Thao tác" Width="120">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Button Content="Sửa" Margin="0,0,6,0" Padding="8,4"
+                                                            Style="{StaticResource SecondaryButtonStyle}"
+                                                            Command="{Binding DataContext.StartEditCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Content="Xóa" Padding="8,4"
+                                                            Style="{StaticResource DangerButtonStyle}"
+                                                            Command="{Binding DataContext.DeleteCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                            CommandParameter="{Binding}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Border>
+
+                        <!-- Form Detail / Editor -->
+                        <Border Grid.Column="2" Style="{StaticResource CardStyle}" Padding="20">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding FormTitle}" FontSize="16" FontWeight="Bold" Foreground="#0F172A" Margin="0,0,0,16" />
+
+                                    <!-- Từ vựng -->
+                                    <TextBlock Text="Từ vựng tương ứng (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <ComboBox ItemsSource="{Binding Materials}" SelectedValue="{Binding FormMaterialId}"
+                                              SelectedValuePath="Id" DisplayMemberPath="Term"
+                                              IsEnabled="{Binding IsEditing}" Height="34" Margin="0,0,0,12" />
+
+                                    <!-- Dạng bài -->
+                                    <TextBlock Text="Dạng bài kiểm tra (Test Type)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <ComboBox ItemsSource="{Binding AvailableTestTypes}" SelectedItem="{Binding FormTestType}"
+                                              IsEnabled="{Binding IsEditing}" Height="34" Margin="0,0,0,12">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding Converter={StaticResource TestTypeConv}}" />
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <!-- Đề bài -->
+                                    <TextBlock Text="Đề bài / Câu hỏi (Prompt) (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormPrompt, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Height="60" TextWrapping="Wrap"
+                                             AcceptsReturn="True" Style="{StaticResource ModernTextBox}" Margin="0,0,0,12" />
+
+                                    <!-- Đáp án đúng -->
+                                    <TextBlock Text="Đáp án chính xác (Correct Answer) (*)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,6" />
+                                    <TextBox Text="{Binding FormCorrectAnswer, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,14" />
+
+                                    <!-- Các lựa chọn trắc nghiệm (Options) -->
+                                    <TextBlock Text="Lựa chọn trắc nghiệm A / B / C / D (Tùy chọn):" FontWeight="SemiBold" Foreground="#475569" Margin="0,0,0,6" />
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="A." FontWeight="Bold" Foreground="#64748B" VerticalAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding FormOptionA, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" />
+                                    </Grid>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="B." FontWeight="Bold" Foreground="#64748B" VerticalAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding FormOptionB, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" />
+                                    </Grid>
+                                    <Grid Margin="0,0,0,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="C." FontWeight="Bold" Foreground="#64748B" VerticalAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding FormOptionC, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" />
+                                    </Grid>
+                                    <Grid Margin="0,0,0,14">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="28" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="D." FontWeight="Bold" Foreground="#64748B" VerticalAlignment="Center" />
+                                        <TextBox Grid.Column="1" Text="{Binding FormOptionD, UpdateSourceTrigger=PropertyChanged}"
+                                                 IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" />
+                                    </Grid>
+
+                                    <!-- Audio Path -->
+                                    <TextBlock Text="Đường dẫn âm thanh (Audio Local Path)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding FormAudioLocalPath, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,10" />
+
+                                    <!-- Image Path -->
+                                    <TextBlock Text="Đường dẫn hình ảnh (Image Local Path)" FontWeight="SemiBold" Foreground="#334155" Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding FormImageLocalPath, UpdateSourceTrigger=PropertyChanged}"
+                                             IsEnabled="{Binding IsEditing}" Style="{StaticResource ModernTextBox}" Margin="0,0,0,20" />
+
+                                    <!-- Action Buttons -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                                Visibility="{Binding IsEditing, Converter={StaticResource BoolToVisConverter}}">
+                                        <Button Content="Hủy" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                                                Command="{Binding CancelEditCommand}" />
+                                        <Button Content="Lưu câu hỏi" Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding SaveCommand}" />
+                                    </StackPanel>
+
+                                    <!-- Button khi chỉ đang xem -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsEditing}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SelectedQuestion}" Value="{x:Null}">
+                                                        <Setter Property="Visibility" Value="Collapsed" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Button Content="Chỉnh sửa câu hỏi" Style="{StaticResource PrimaryButtonStyle}"
+                                                Command="{Binding StartEditCommand}" CommandParameter="{Binding SelectedQuestion}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- IN-APP EXCEL IMPORT MODAL OVERLAY -->
+        <Grid Panel.ZIndex="100"
+              Visibility="{Binding MaterialVM.IsImportModalOpen, Converter={StaticResource BoolToVisConverter}}"
+              Background="#950F172A" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Border Width="1100" Height="640" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Background="#FFFFFF" CornerRadius="12" Padding="24" BorderBrush="#CBD5E1" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="30" ShadowDepth="10" Direction="270" Color="#000000" Opacity="0.35" />
+                </Border.Effect>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Row 0: Modal Header -->
+                    <Grid Grid.Row="0" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <Border Width="38" Height="38" Background="#0D9488" CornerRadius="8" Margin="0,0,12,0">
+                                <TextBlock Text="📥" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="Nhập từ vựng từ tệp Excel (Import Vocabulary)" FontSize="18" FontWeight="Bold" Foreground="#0F172A" />
+                                <TextBlock Text="Cấu trúc: Cột 1 (Từ) | Cột 2 (Loại từ) | Cột 3 (Phiên âm) | Cột 4 (Nghĩa) | Cột 5+6 (Ví dụ En + Vi)" Foreground="#64748B" FontSize="12" />
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- Close Button -->
+                        <Button Grid.Column="1" Content="✕" Width="32" Height="32" Padding="0" Cursor="Hand"
+                                Style="{StaticResource SecondaryButtonStyle}"
+                                Command="{Binding MaterialVM.CloseImportModalCommand}" />
+                    </Grid>
+
+                    <!-- Row 1: Configurations (Deck, CategoryType, File Picker, Header check) -->
+                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14" Margin="0,0,0,14">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220" />
+                                <ColumnDefinition Width="190" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Chọn bộ đề đích -->
+                            <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                                <TextBlock Text="Bộ đề đích (*):" FontWeight="SemiBold" Foreground="#334155" FontSize="12" Margin="0,0,0,4" />
+                                <ComboBox ItemsSource="{Binding MaterialVM.Decks}"
+                                          SelectedValue="{Binding MaterialVM.SelectedImportDeckId}"
+                                          SelectedValuePath="Id" DisplayMemberPath="Name"
+                                          Height="32" VerticalContentAlignment="Center" />
+                            </StackPanel>
+
+                            <!-- Chọn CategoryType -->
+                            <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                                <TextBlock Text="Phân loại mặc định:" FontWeight="SemiBold" Foreground="#334155" FontSize="12" Margin="0,0,0,4" />
+                                <ComboBox ItemsSource="{Binding MaterialVM.AvailableCategories}"
+                                          SelectedItem="{Binding MaterialVM.SelectedImportCategoryType}"
+                                          Height="32" VerticalContentAlignment="Center">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource CategoryConv}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+
+                            <!-- Chọn file Excel -->
+                            <StackPanel Grid.Column="2" Margin="0,0,14,0">
+                                <TextBlock Text="Tệp Excel (.xlsx, .xls):" FontWeight="SemiBold" Foreground="#334155" FontSize="12" Margin="0,0,0,4" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox Grid.Column="0" Text="{Binding MaterialVM.ImportFilePath, Mode=OneWay}"
+                                             IsReadOnly="True" Height="32" Style="{StaticResource ModernTextBox}"
+                                             ToolTip="{Binding MaterialVM.ImportFilePath}" />
+                                    <Button Grid.Column="1" Content="📂 Chọn tệp..." Margin="6,0,0,0" Padding="12,0" Height="32"
+                                            Style="{StaticResource PrimaryButtonStyle}"
+                                            Command="{Binding MaterialVM.BrowseExcelFileCommand}" />
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Checkbox Dòng đầu tiên là tiêu đề -->
+                            <StackPanel Grid.Column="3" VerticalAlignment="Bottom" Margin="0,0,0,7">
+                                <CheckBox Content="Dòng 1 là tiêu đề (Bỏ qua)"
+                                          IsChecked="{Binding MaterialVM.HasHeaderRow}"
+                                          FontWeight="Medium" Foreground="#334155" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Row 2: Preview DataGrid (GridView) -->
+                    <Border Grid.Row="2" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Background="#FFFFFF">
+                        <Grid>
+                            <DataGrid ItemsSource="{Binding MaterialVM.ImportPreviewItems}"
+                                      AutoGenerateColumns="False" CanUserAddRows="False" SelectionMode="Single"
+                                      HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                                      HorizontalGridLinesBrush="#F1F5F9" Background="#FFFFFF" BorderThickness="0"
+                                      RowHeight="36" FontSize="12">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="#" Binding="{Binding RowIndex}" Width="45" />
+                                    <DataGridTextColumn Header="Từ vựng (Cột 1)" Binding="{Binding Term}" Width="130" FontWeight="Bold" />
+                                    <DataGridTextColumn Header="Loại từ (Cột 2)" Binding="{Binding ContextTag}" Width="90" Foreground="#2563EB" />
+                                    <DataGridTextColumn Header="Phiên âm (Cột 3)" Binding="{Binding Phonetics}" Width="110" Foreground="#64748B" />
+                                    <DataGridTextColumn Header="Nghĩa (Cột 4)" Binding="{Binding Meaning}" Width="200" />
+                                    <DataGridTextColumn Header="Câu ví dụ ghép (Cột 5 + 6)" Binding="{Binding ExampleSentence}" Width="3*" />
+                                    <DataGridTemplateColumn Header="Trạng thái" Width="100">
+                                        <DataGridTemplateColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Border CornerRadius="4" Padding="6,2" HorizontalAlignment="Left"
+                                                        Background="{Binding IsValid, Converter={StaticResource ValidColorConv}}">
+                                                    <TextBlock Text="{Binding StatusText}" Foreground="#FFFFFF" FontWeight="SemiBold" FontSize="10" />
+                                                </Border>
+                                            </DataTemplate>
+                                        </DataGridTemplateColumn.CellTemplate>
+                                    </DataGridTemplateColumn>
+                                </DataGrid.Columns>
+                            </DataGrid>
+
+                            <!-- Placeholder khi chưa chọn file -->
+                            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding MaterialVM.ImportPreviewItems.Count}" Value="0">
+                                                <Setter Property="Visibility" Value="Visible" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <TextBlock Text="📊" FontSize="40" HorizontalAlignment="Center" Margin="0,0,0,8" />
+                                <TextBlock Text="Chưa có dữ liệu xem trước" FontWeight="Bold" FontSize="14" Foreground="#64748B" HorizontalAlignment="Center" />
+                                <TextBlock Text="Vui lòng bấm 'Chọn tệp...' để nạp dữ liệu từ file Excel (.xlsx, .xls)" Foreground="#94A3B8" FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Row 3: Modal Footer (Stats & Action buttons) -->
+                    <Grid Grid.Row="3" Margin="0,16,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Stats -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="Đã đọc:" Foreground="#64748B" FontWeight="Medium" />
+                            <TextBlock Text="{Binding MaterialVM.TotalImportCount, StringFormat=' {0} dòng | '}" Foreground="#0F172A" FontWeight="Bold" />
+                            <TextBlock Text="Hợp lệ:" Foreground="#64748B" FontWeight="Medium" />
+                            <TextBlock Text="{Binding MaterialVM.ValidImportCount, StringFormat=' {0} dòng sẵn sàng import'}" Foreground="#10B981" FontWeight="Bold" />
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <Button Content="Hủy bỏ" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                                    Command="{Binding MaterialVM.CloseImportModalCommand}" />
+                            <Button Content="✓ Tiến hành Import vào SQLite" Style="{StaticResource PrimaryButtonStyle}"
+                                    Background="#0D9488"
+                                    Command="{Binding MaterialVM.ExecuteImportCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- IN-APP MODAL DIALOG OVERLAY (HIỂN THỊ TRÊN CÙNG TOÀN BỘ CÁC MÀN HÌNH VÀ MODAL) -->
+        <Grid Panel.ZIndex="999"
+              Visibility="{Binding DialogService.IsOpen, Converter={StaticResource BoolToVisConverter}}"
+              Background="#A00F172A" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <!-- Modal Card -->
+            <Border Width="460" VerticalAlignment="Center" HorizontalAlignment="Center"
+                    Background="#FFFFFF" CornerRadius="12" Padding="24" BorderBrush="#E2E8F0" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="25" ShadowDepth="8" Direction="270" Color="#000000" Opacity="0.4" />
+                </Border.Effect>
+                <StackPanel>
+                    <!-- Header with Icon & Title -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,14">
+                        <Border Width="38" Height="38" CornerRadius="19"
+                                Background="{Binding DialogService.Type, Converter={StaticResource DialogColorConv}}"
+                                Margin="0,0,12,0">
+                            <TextBlock Text="{Binding DialogService.Type, Converter={StaticResource DialogIconConv}}"
+                                       Foreground="#FFFFFF" FontWeight="Bold" FontSize="18"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock Text="{Binding DialogService.Title}" FontSize="18" FontWeight="Bold"
+                                   Foreground="#0F172A" VerticalAlignment="Center" />
+                    </StackPanel>
+
+                    <!-- Message Body -->
+                    <TextBlock Text="{Binding DialogService.Message}" FontSize="14" Foreground="#475569"
+                               TextWrapping="Wrap" LineHeight="20" Margin="0,0,0,24" />
+
+                    <!-- Action Buttons -->
+                    <Grid>
+                        <!-- Confirmation Mode: Hủy & Xác nhận -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                    Visibility="{Binding DialogService.IsConfirmation, Converter={StaticResource BoolToVisConverter}}">
+                            <Button Content="Hủy bỏ" Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,10,0"
+                                    Command="{Binding DialogService.CancelCommand}" />
+                            <Button Content="Xác nhận" Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding DialogService.ConfirmCommand}" />
+                        </StackPanel>
+
+                        <!-- Alert / Info Mode: Đã hiểu (OK) -->
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding DialogService.IsConfirmation}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <Button Content="Đã hiểu" Style="{StaticResource PrimaryButtonStyle}"
+                                    Command="{Binding DialogService.ConfirmCommand}" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

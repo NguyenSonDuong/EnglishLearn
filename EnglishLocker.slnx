@@ -4,4 +4,5 @@
   <Project Path="English.Service/English.Service.csproj" />
   <Project Path="English.ViewModel/English.ViewModel.csproj" />
   <Project Path="EnglishLocker/EnglishLocker.csproj" />
+  <Project Path="EnglishManager/EnglishManager.csproj" />
 </Solution>

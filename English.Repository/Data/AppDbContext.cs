@@ -14,11 +14,22 @@ public class AppDbContext : DbContext
     public DbSet<StudyHistory> StudyHistories => Set<StudyHistory>();
     public DbSet<EmergencyLog> EmergencyLogs => Set<EmergencyLog>();
 
+    public static string CurrentDatabasePath { get; set; } = "englishlocker.db";
+
+    public void SwitchDatabase(string newDatabasePath)
+    {
+        CurrentDatabasePath = newDatabasePath;
+        Database.CloseConnection();
+        Database.SetConnectionString($"Data Source={newDatabasePath}");
+        ChangeTracker.Clear();
+        Database.Migrate();
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
-            optionsBuilder.UseSqlite("Data Source=englishlocker.db");
+            optionsBuilder.UseSqlite($"Data Source={CurrentDatabasePath}");
         }
     }
 

@@ -38,15 +38,17 @@ Giải pháp tuân theo kiến trúc phân tầng độc lập (**Clean / Onion 
 │   Migrations)     │      │ ShellManagement, │       │                  │
 │                   │      │ KeyboardHook)    │       │                  │
 └────────▲──────────┘      └────────▲─────────┘       └────────▲─────────┘
-         │                          │                          │
-         └──────────────────────────┼──────────────────────────┘
-                                    │ references all 4 modules
-                       ┌────────────┴────────────┐
-                       │      EnglishLocker      │
-                       │ (Views, DI Container,   │  <── CHỈ CẤU HÌNH DI & VIEW
-                       │  WindowManagerService,  │
-                       │     App.xaml / .cs)     │
-                       └─────────────────────────┘
+         │          ▲               │          ▲               │
+         │          │               │          │               │
+         │          └───────┬───────┘          └───────┬───────┘
+         │                  │                          │
+         │                  │                          │ references all 4 modules
+         │     ┌────────────┴────────────┐┌────────────┴────────────┐
+         │     │     EnglishManager      ││      EnglishLocker      │
+         └────►│(Quản lý từ, câu hỏi,    ││ (Views, DI Container,   │
+               │ bộ đề - Single Window,  ││  WindowManagerService,  │
+               │ tự chứa ViewModels riêng││     App.xaml / .cs)     │
+               └─────────────────────────┘└─────────────────────────┘
 ```
 
 ---
@@ -95,6 +97,14 @@ Giải pháp tuân theo kiến trúc phân tầng độc lập (**Clean / Onion 
   - `Converters/`: Các Value Converter WPF (`CheatCountToVisibilityConverter`).
   - `Services/`: `WindowManagerService` – triển khai interface `IWindowManagerService` để điều khiển hiển thị đa màn hình vật lý và đóng mở View.
 
+### 3.6. `EnglishManager` (Standalone WPF Management Application)
+- **Mục đích**: Ứng dụng quản trị/nội dung độc lập (Content & Deck Manager) phục vụ quản lý từ mới (Learning Materials), câu hỏi (Questions) và bộ đề (Decks) trên cơ sở dữ liệu SQLite.
+- **Dependencies**: Chỉ reference 3 project: `English.Entity`, `English.Repository`, và `English.Service`.
+- **Quy tắc vàng của EnglishManager**:
+  - **TUYỆT ĐỐI KHÔNG reference** tới `EnglishLocker` hay `English.ViewModel`.
+  - **Tự quản lý ViewModel**: Toàn bộ ViewModels phục vụ quản lý phải nằm trực tiếp trong project `EnglishManager` (namespace `EnglishManager.ViewModels`), không được đặt trong `English.ViewModel`.
+  - **Single-Window & In-App Dialog**: Ứng dụng chỉ hoạt động trong 1 Window duy nhất. Toàn bộ thông báo, xác nhận, xóa, cảnh báo hoặc form chi tiết phải hiển thị dạng Dialog/Modal Overlay bên trong giao diện (In-App Dialog Overlay), **tuyệt đối không mở MessageBox/MessageDialog của hệ thống Windows**.
+
 ---
 
 ## 4. QUY CHUẨN ĐẶT TÊN VÀ NAMESPACES
@@ -125,6 +135,13 @@ namespace EnglishLocker;
 namespace EnglishLocker.Views;
 namespace EnglishLocker.Converters;
 namespace EnglishLocker.Services;
+
+// EnglishManager
+namespace EnglishManager;
+namespace EnglishManager.Views;
+namespace EnglishManager.ViewModels;
+namespace EnglishManager.Converters;
+namespace EnglishManager.Services;
 ```
 
 ---
