@@ -83,11 +83,13 @@ public partial class App : Application
 
         // ── ViewModels ──
         services.AddTransient<MainViewModel>();
+        services.AddTransient<QuizViewModel>();
         services.AddTransient<StartupWarningViewModel>();
 
         // ── Views ──
         services.AddTransient<MainWindow>();
         services.AddTransient<BlackoutWindow>();
+        services.AddTransient<QuizControl>();
         services.AddTransient<StartupWarningControl>();
     }
 

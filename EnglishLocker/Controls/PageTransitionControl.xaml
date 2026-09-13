@@ -1,0 +1,25 @@
+﻿<UserControl x:Class="EnglishLocker.Controls.PageTransitionControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid x:Name="LayoutRoot">
+        <!-- Khung chứa snapshot (VisualBrush) của trang cũ trong lúc diễn ra hiệu ứng chuyển trang -->
+        <Border x:Name="PreviousContainer"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="PreviousTranslate"/>
+            </Border.RenderTransform>
+        </Border>
+
+        <!-- Khung hiển thị trang mới hiện tại -->
+        <ContentPresenter x:Name="CurrentPresenter">
+            <ContentPresenter.RenderTransform>
+                <TranslateTransform x:Name="CurrentTranslate"/>
+            </ContentPresenter.RenderTransform>
+        </ContentPresenter>
+    </Grid>
+</UserControl>

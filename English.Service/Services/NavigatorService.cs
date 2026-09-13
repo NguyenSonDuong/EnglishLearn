@@ -1,28 +1,307 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
+using English.Entity.Enums;
 using English.Entity.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace English.Service.Services;
 
 /// <summary>
-/// Triển khai INavigatorService: Điều phối trung chuyển hiển thị, mở, đóng và xếp chồng (Stack) các Dialog / UserControl.
+/// Triển khai INavigatorService: Điều phối trung chuyển hiển thị, mở, đóng và chuyển đổi các UserControl / Page và Dialog.
 /// 
-/// Các tính năng then chốt:
-/// 1. Mở màn hình bất kỳ chỉ cần truyền Class của ViewModel (OpenDialog&lt;TViewModel&gt;()).
-/// 2. Hỗ trợ ViewModel tự đóng chính nó thông qua RequestClose callback hoặc Close() command.
-/// 3. Truyền 1 hoặc nhiều tham số (Id, DTO, Action, Func callback) sang ViewModel nhận qua IParameterReceiver hoặc Action&lt;TViewModel&gt; configure.
-/// 4. Tích hợp DI Container (IServiceProvider): tự động phân giải ViewModel cùng các Service phụ thuộc.
-/// 5. Cơ chế LIFO: Dialog gọi sau cùng luôn được thêm vào đỉnh ngăn xếp (Z-order cao nhất trên giao diện).
-/// 6. Hỗ trợ hiển thị dạng Stack để các dialog xếp lớp tự nhiên, khi đóng dialog trên cùng thì dialog bên dưới lập tức hiển thị lại.
+/// Tính năng then chốt:
+/// 1. Điều phối Page navigation trên Single Page container, quản lý PageStack và CurrentPage.
+/// 2. Hỗ trợ tham số addToStack (mặc định true). Nếu false, Page mới chỉ được hiển thị mà không lưu vào PageStack.
+/// 3. Cung cấp thuộc tính TransitionDirection (Forward, Backward) và kích hoạt sự kiện để View thực hiện animation chuyển trang mượt mà.
+/// 4. Hỗ trợ cơ chế GoBack() và đóng Page tự động từ bên trong ViewModel qua IPageViewModel.RequestClose.
+/// 5. Quản lý DialogStack dạng LIFO Modal Overlay trên cùng giao diện.
+/// 6. Tích hợp DI Container (IServiceProvider) và tự động truyền tham số đa dạng qua IParameterReceiver.
 /// </summary>
-public class NavigatorService : INavigatorService
+public class NavigatorService : INavigatorService, INotifyPropertyChanged
 {
     private readonly IServiceProvider _serviceProvider;
 
+    private object? _currentPage;
+    private NavigationTransitionDirection _transitionDirection = NavigationTransitionDirection.None;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PAGE NAVIGATION & STACK MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Ngăn xếp lịch sử các Page ViewModel đang được lưu trữ.
+    /// </summary>
+    public ObservableCollection<object> PageStack { get; } = new();
+
+    /// <summary>
+    /// ViewModel của Page hiện đang được hiển thị trên giao diện chính.
+    /// </summary>
+    public object? CurrentPage
+    {
+        get => _currentPage;
+        private set
+        {
+            if (!Equals(_currentPage, value))
+            {
+                _currentPage = value;
+                OnPropertyChanged(nameof(CurrentPage));
+                OnPropertyChanged(nameof(CanGoBack));
+                CurrentPageChanged?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cho biết hiện tại có thể thực hiện thao tác quay lại trang trước hay không.
+    /// </summary>
+    public bool CanGoBack
+    {
+        get
+        {
+            if (CurrentPage == null) return false;
+
+            // Nếu CurrentPage không nằm trong PageStack (do mở với addToStack = false),
+            // có thể quay lại nếu PageStack có ít nhất 1 phần tử.
+            if (!PageStack.Contains(CurrentPage))
+            {
+                return PageStack.Count > 0;
+            }
+
+            // Nếu CurrentPage nằm trong PageStack, chỉ có thể quay lại nếu stack có từ 2 phần tử trở lên.
+            return PageStack.Count > 1;
+        }
+    }
+
+    /// <summary>
+    /// Chiều chuyển động animation hiện tại khi chuyển đổi giữa các Page.
+    /// </summary>
+    public NavigationTransitionDirection TransitionDirection
+    {
+        get => _transitionDirection;
+        private set
+        {
+            if (_transitionDirection != value)
+            {
+                _transitionDirection = value;
+                OnPropertyChanged(nameof(TransitionDirection));
+            }
+        }
+    }
+
+    public event Action? CurrentPageChanged;
+    public event Action? PageStackChanged;
+
+    public NavigatorService(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+    }
+
+    /// <summary>
+    /// Điều hướng tới Page mới theo ViewModel class (addToStack mặc định là true).
+    /// </summary>
+    public TViewModel NavigateTo<TViewModel>(bool addToStack = true, params object?[] parameters) where TViewModel : class
+    {
+        return NavigateTo<TViewModel>(null, addToStack, parameters);
+    }
+
+    /// <summary>
+    /// Điều hướng tới Page mới kèm delegate cấu hình.
+    /// </summary>
+    public TViewModel NavigateTo<TViewModel>(Action<TViewModel>? configure, bool addToStack = true, params object?[] parameters) where TViewModel : class
+    {
+        var instance = NavigateToInternal(
+            typeof(TViewModel),
+            addToStack,
+            parameters,
+            obj => configure?.Invoke((TViewModel)obj)
+        );
+
+        return (TViewModel)instance;
+    }
+
+    /// <summary>
+    /// Điều hướng tới Page mới theo Type của ViewModel.
+    /// </summary>
+    public object NavigateTo(Type viewModelType, bool addToStack = true, params object?[] parameters)
+    {
+        return NavigateToInternal(viewModelType, addToStack, parameters, null);
+    }
+
+    /// <summary>
+    /// Logic cốt lõi phân giải ViewModel, gán RequestClose, truyền parameters và cập nhật PageStack/CurrentPage.
+    /// </summary>
+    private object NavigateToInternal(Type viewModelType, bool addToStack, object?[]? parameters, Action<object>? configure)
+    {
+        ArgumentNullException.ThrowIfNull(viewModelType);
+
+        object instance = ResolveViewModelInstance(viewModelType);
+
+        // Thiết lập cơ chế tự đóng / quay lại cho Page
+        if (instance is IPageViewModel pageVm)
+        {
+            pageVm.RequestClose = () => ClosePage(instance);
+        }
+
+        // Truyền mảng tham số nếu ViewModel có nhận tham số
+        if (parameters != null && parameters.Length > 0 && instance is IParameterReceiver parameterReceiver)
+        {
+            parameterReceiver.ReceiveParameters(parameters);
+        }
+
+        // Thực thi cấu hình bổ sung
+        configure?.Invoke(instance);
+
+        // Cập nhật giao diện trên UI Thread
+        ExecuteOnUIThread(() =>
+        {
+            TransitionDirection = NavigationTransitionDirection.Forward;
+
+            if (addToStack)
+            {
+                if (PageStack.Contains(instance))
+                {
+                    PageStack.Remove(instance);
+                }
+
+                PageStack.Add(instance);
+                PageStackChanged?.Invoke();
+            }
+
+            CurrentPage = instance;
+        });
+
+        return instance;
+    }
+
+    /// <summary>
+    /// Quay lại Page trước đó trong ngăn xếp.
+    /// </summary>
+    public bool GoBack()
+    {
+        if (!CanGoBack) return false;
+
+        bool handled = false;
+
+        ExecuteOnUIThread(() =>
+        {
+            TransitionDirection = NavigationTransitionDirection.Backward;
+
+            if (CurrentPage != null && !PageStack.Contains(CurrentPage))
+            {
+                // CurrentPage không nằm trong PageStack (được mở với addToStack = false)
+                if (CurrentPage is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                CurrentPage = PageStack.Count > 0 ? PageStack[^1] : null;
+                handled = true;
+            }
+            else if (PageStack.Count > 1)
+            {
+                // CurrentPage nằm trên đỉnh PageStack
+                var leavingPage = PageStack[^1];
+                PageStack.RemoveAt(PageStack.Count - 1);
+
+                if (leavingPage is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                CurrentPage = PageStack[^1];
+                PageStackChanged?.Invoke();
+                handled = true;
+            }
+        });
+
+        return handled;
+    }
+
+    /// <summary>
+    /// Đóng một Page cụ thể khỏi hệ thống.
+    /// </summary>
+    public bool ClosePage(object viewModel)
+    {
+        if (viewModel == null) return false;
+
+        bool removed = false;
+
+        ExecuteOnUIThread(() =>
+        {
+            if (Equals(viewModel, CurrentPage))
+            {
+                if (CanGoBack)
+                {
+                    removed = GoBack();
+                }
+                else
+                {
+                    if (PageStack.Contains(viewModel))
+                    {
+                        PageStack.Remove(viewModel);
+                        PageStackChanged?.Invoke();
+                    }
+
+                    if (viewModel is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+
+                    CurrentPage = PageStack.Count > 0 ? PageStack[^1] : null;
+                    removed = true;
+                }
+            }
+            else if (PageStack.Contains(viewModel))
+            {
+                removed = PageStack.Remove(viewModel);
+
+                if (viewModel is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+
+                PageStackChanged?.Invoke();
+                OnPropertyChanged(nameof(CanGoBack));
+            }
+        });
+
+        return removed;
+    }
+
+    /// <summary>
+    /// Xóa toàn bộ lịch sử các Page trong ngăn xếp.
+    /// </summary>
+    public void ClearPageStack()
+    {
+        ExecuteOnUIThread(() =>
+        {
+            if (PageStack.Count == 0) return;
+
+            var items = PageStack.ToList();
+            PageStack.Clear();
+
+            foreach (var item in items)
+            {
+                if (!Equals(item, CurrentPage) && item is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+
+            PageStackChanged?.Invoke();
+            OnPropertyChanged(nameof(CanGoBack));
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DIALOG NAVIGATION & OVERLAY MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
     /// Ngăn xếp các Dialog ViewModel đang hoạt động.
-    /// Phần tử cuối cùng trong Collection chính là phần tử nằm trên cùng của màn hình.
     /// </summary>
     public ObservableCollection<object> DialogStack { get; } = new();
 
@@ -42,16 +321,7 @@ public class NavigatorService : INavigatorService
     public event Action? DialogStackChanged;
 
     /// <summary>
-    /// Khởi tạo NavigatorService với DI ServiceProvider để phân giải các ViewModel.
-    /// </summary>
-    /// <param name="serviceProvider">Dependency Injection provider.</param>
-    public NavigatorService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
-    }
-
-    /// <summary>
-    /// Mở một Dialog theo ViewModel class (yêu cầu số 1 & 3).
+    /// Mở một Dialog theo ViewModel class.
     /// </summary>
     public TViewModel OpenDialog<TViewModel>(params object?[] parameters) where TViewModel : class
     {
@@ -59,7 +329,7 @@ public class NavigatorService : INavigatorService
     }
 
     /// <summary>
-    /// Mở một Dialog theo ViewModel class kèm delegate cấu hình khởi tạo (Action/Func) (yêu cầu số 1 & 3).
+    /// Mở một Dialog theo ViewModel class kèm delegate cấu hình khởi tạo.
     /// </summary>
     public TViewModel OpenDialog<TViewModel>(Action<TViewModel>? configure, params object?[] parameters) where TViewModel : class
     {
@@ -73,7 +343,7 @@ public class NavigatorService : INavigatorService
     }
 
     /// <summary>
-    /// Mở một Dialog theo Type của ViewModel (yêu cầu số 1).
+    /// Mở một Dialog theo Type của ViewModel.
     /// </summary>
     public object OpenDialog(Type viewModelType, params object?[] parameters)
     {
@@ -81,60 +351,36 @@ public class NavigatorService : INavigatorService
     }
 
     /// <summary>
-    /// Logic cốt lõi phân giải ViewModel, gán RequestClose, truyền parameters và đưa vào Stack.
+    /// Logic phân giải và đẩy Dialog lên đỉnh ngăn xếp DialogStack.
     /// </summary>
     private object OpenDialogInternal(Type viewModelType, object?[]? parameters, Action<object>? configure)
     {
         ArgumentNullException.ThrowIfNull(viewModelType);
 
-        // 1. Phân giải instance của ViewModel:
-        //    Ưu tiên lấy từ DI Container (nếu đã đăng ký AddTransient / AddScoped).
-        //    Nếu chưa đăng ký trong DI, dùng ActivatorUtilities để tự động inject các service phụ thuộc vào constructor.
-        object? instance = _serviceProvider.GetService(viewModelType);
-        if (instance == null)
-        {
-            try
-            {
-                instance = ActivatorUtilities.CreateInstance(_serviceProvider, viewModelType);
-            }
-            catch
-            {
-                // Fallback cuối cùng nếu không có constructor phù hợp qua ActivatorUtilities
-                instance = Activator.CreateInstance(viewModelType)
-                    ?? throw new InvalidOperationException($"Không thể tạo thể hiện của ViewModel '{viewModelType.FullName}'.");
-            }
-        }
+        object instance = ResolveViewModelInstance(viewModelType);
 
-        // 2. Thiết lập cơ chế tự đóng (yêu cầu số 2):
-        //    Nếu ViewModel triển khai IDialogViewModel, gán RequestClose callback để nó có thể tự gọi Close().
         if (instance is IDialogViewModel dialogVm)
         {
             dialogVm.RequestClose = () => CloseDialog(instance);
         }
 
-        // 3. Truyền mảng tham số sang ViewModel (yêu cầu số 3):
-        //    Nếu ViewModel triển khai IParameterReceiver, chuyển tiếp toàn bộ tham số (Id, DTO, Action, Func...) sang.
         if (parameters != null && parameters.Length > 0 && instance is IParameterReceiver parameterReceiver)
         {
             parameterReceiver.ReceiveParameters(parameters);
         }
 
-        // 4. Thực thi delegate cấu hình bổ sung (nếu có):
-        //    Cho phép caller cấu hình trực tiếp các callback Action/Func hoặc gán dữ liệu ban đầu.
         configure?.Invoke(instance);
 
-        // 5. Đưa Dialog vào ngăn xếp (yêu cầu số 5 & 6):
-        //    Đảm bảo thao tác cập nhật Collection diễn ra trên UI Thread (Dispatcher).
-        //    Phần tử thêm sau cùng sẽ nằm ở đỉnh ngăn xếp (Z-order cao nhất trên giao diện).
         ExecuteOnUIThread(() =>
         {
             if (DialogStack.Contains(instance))
             {
-                // Nếu đã tồn tại trong stack, gỡ ra và đưa lên đầu đỉnh ngăn xếp
                 DialogStack.Remove(instance);
             }
 
             DialogStack.Add(instance);
+            OnPropertyChanged(nameof(CurrentDialog));
+            OnPropertyChanged(nameof(HasActiveDialogs));
             DialogStackChanged?.Invoke();
         });
 
@@ -142,7 +388,7 @@ public class NavigatorService : INavigatorService
     }
 
     /// <summary>
-    /// Đóng một Dialog cụ thể khỏi ngăn xếp (yêu cầu số 2).
+    /// Đóng một Dialog cụ thể khỏi ngăn xếp.
     /// </summary>
     public bool CloseDialog(object viewModel)
     {
@@ -156,12 +402,13 @@ public class NavigatorService : INavigatorService
             {
                 removed = DialogStack.Remove(viewModel);
 
-                // Nếu ViewModel có implement IDisposable, giải phóng tài nguyên
                 if (viewModel is IDisposable disposable)
                 {
                     disposable.Dispose();
                 }
 
+                OnPropertyChanged(nameof(CurrentDialog));
+                OnPropertyChanged(nameof(HasActiveDialogs));
                 DialogStackChanged?.Invoke();
             }
         });
@@ -170,7 +417,7 @@ public class NavigatorService : INavigatorService
     }
 
     /// <summary>
-    /// Đóng Dialog đang nằm trên đỉnh ngăn xếp (Dialog được mở gần đây nhất).
+    /// Đóng Dialog đang nằm trên đỉnh ngăn xếp.
     /// </summary>
     public bool CloseTopDialog()
     {
@@ -198,13 +445,40 @@ public class NavigatorService : INavigatorService
                 }
             }
 
+            OnPropertyChanged(nameof(CurrentDialog));
+            OnPropertyChanged(nameof(HasActiveDialogs));
             DialogStackChanged?.Invoke();
         });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // HELPERS
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Hỗ trợ chạy an toàn trên Dispatcher của WPF UI thread.
+    /// Phân giải instance của ViewModel từ DI Container hoặc ActivatorUtilities.
     /// </summary>
+    private object ResolveViewModelInstance(Type viewModelType)
+    {
+        object? instance = _serviceProvider.GetService(viewModelType);
+        if (instance != null) return instance;
+
+        try
+        {
+            return ActivatorUtilities.CreateInstance(_serviceProvider, viewModelType);
+        }
+        catch
+        {
+            return Activator.CreateInstance(viewModelType)
+                ?? throw new InvalidOperationException($"Không thể tạo thể hiện của ViewModel '{viewModelType.FullName}'.");
+        }
+    }
+
+    private void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
     private static void ExecuteOnUIThread(Action action)
     {
         if (Application.Current?.Dispatcher != null && !Application.Current.Dispatcher.CheckAccess())
