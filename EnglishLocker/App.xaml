@@ -1,0 +1,16 @@
+<Application x:Class="EnglishLocker.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:EnglishLocker.Converters"
+             ShutdownMode="OnMainWindowClose">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         StartupUri KHÔNG được set ở đây vì ta khởi tạo MainWindow
+         thông qua DI container trong App.xaml.cs (OnStartup).
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <Application.Resources>
+        <!-- Đăng ký converter dùng chung cho toàn app -->
+        <conv:CheatCountToVisibilityConverter x:Key="CheatVisibilityConverter"/>
+    </Application.Resources>
+</Application>

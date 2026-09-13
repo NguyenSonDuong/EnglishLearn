@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="English.Entity/English.Entity.csproj" />
+  <Project Path="English.Repository/English.Repository.csproj" />
+  <Project Path="English.Service/English.Service.csproj" />
+  <Project Path="English.ViewModel/English.ViewModel.csproj" />
+  <Project Path="EnglishLocker/EnglishLocker.csproj" />
+</Solution>

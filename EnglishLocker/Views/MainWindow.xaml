@@ -1,0 +1,197 @@
+<Window x:Class="EnglishLocker.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="EnglishLocker"
+        
+        WindowStyle="None"
+        WindowState="Normal"
+        WindowStartupLocation="Manual"
+        Topmost="True"
+        ResizeMode="NoResize"
+        AllowsTransparency="False"
+        
+        Background="#1a1a2e">
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Kiosk-mode: WindowStyle=None + Maximized + Topmost + NoResize
+         → Toàn màn hình, không viền, luôn trên cùng, không thể resize.
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <Window.Resources>
+        <!-- ── Style cho RadioButton đáp án ── -->
+        <Style x:Key="OptionRadioButton" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Margin" Value="0,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border"
+                                Background="#2a2a4a"
+                                BorderBrush="#4a4a8a"
+                                BorderThickness="2"
+                                CornerRadius="8"
+                                Padding="16,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Indicator tròn -->
+                                <Ellipse x:Name="dot"
+                                         Width="20" Height="20"
+                                         Stroke="#7a7aba"
+                                         StrokeThickness="2"
+                                         Fill="Transparent"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,12,0"/>
+                                <ContentPresenter Grid.Column="1"
+                                                  VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="#6c63ff"/>
+                                <Setter TargetName="border" Property="Background" Value="#3a3a6a"/>
+                                <Setter TargetName="dot" Property="Fill" Value="#6c63ff"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#353560"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Style cho nút Submit ── -->
+        <Style x:Key="SubmitButton" TargetType="Button">
+            <Setter Property="Background" Value="#6c63ff"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="40,14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#5a52e0"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#4a42c0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Layout chính: card quiz nổi trên nền tối
+         ═══════════════════════════════════════════════════════════════════ -->
+    <Grid>
+        <!-- Card chứa quiz, căn giữa màn hình -->
+        <Border Background="#22223a"
+                CornerRadius="20"
+                Padding="50,40"
+                MaxWidth="700"
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center">
+            <Border.Effect>
+                <DropShadowEffect Color="Black" BlurRadius="40" Opacity="0.5" ShadowDepth="0"/>
+            </Border.Effect>
+
+            <StackPanel>
+                <!-- ── Header ── -->
+                <TextBlock Text="🔒 ENGLISH LOCKER"
+                           Foreground="#6c63ff"
+                           FontSize="28"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,5"/>
+
+                <TextBlock Text="Trả lời đúng để mở khóa màn hình"
+                           Foreground="#8888aa"
+                           FontSize="14"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,20"/>
+
+                <!-- ── Thanh tiến trình ── -->
+                <Border Background="#2a2a4a"
+                        CornerRadius="6"
+                        Padding="12,6"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,25">
+                    <TextBlock Text="{Binding ProgressText}"
+                               Foreground="#aaaacc"
+                               FontSize="14"/>
+                </Border>
+
+                <!-- ── Nội dung câu hỏi ── -->
+                <TextBlock Text="{Binding CurrentQuestion.Content}"
+                           Foreground="White"
+                           FontSize="22"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           Margin="0,0,0,25"/>
+
+                <!-- ── Danh sách đáp án ──
+                     Mỗi item là RadioButton, click → gọi SelectAnswerCommand
+                     với CommandParameter là nội dung đáp án (string).
+                     GroupName="Answers" đảm bảo chỉ 1 đáp án được chọn. -->
+                <ItemsControl ItemsSource="{Binding CurrentQuestion.Options}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <RadioButton Content="{Binding}"
+                                         GroupName="Answers"
+                                         Style="{StaticResource OptionRadioButton}"
+                                         Command="{Binding DataContext.SelectAnswerCommand,
+                                                   RelativeSource={RelativeSource AncestorType=Window}}"
+                                         CommandParameter="{Binding}"/>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <!-- ── Nút xác nhận ── -->
+                <Button Content="✓  Xác nhận"
+                        Style="{StaticResource SubmitButton}"
+                        Command="{Binding SubmitAnswerCommand}"
+                        HorizontalAlignment="Center"
+                        Margin="0,30,0,0"/>
+
+                <!-- ── Thông báo kết quả ── -->
+                <TextBlock Text="{Binding FeedbackMessage}"
+                           Foreground="#ffaa55"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           Margin="0,20,0,0"/>
+
+                <!-- ── Cảnh báo gian lận (ẩn khi CheatCount = 0) ── -->
+                <TextBlock Foreground="#ff4444"
+                           FontSize="13"
+                           HorizontalAlignment="Center"
+                           Margin="0,10,0,0"
+                           Visibility="{Binding CheatCount,
+                                        Converter={StaticResource CheatVisibilityConverter}}">
+                    <Run Text="⚠ Số lần gian lận: "/>
+                    <Run Text="{Binding CheatCount, Mode=OneWay}"/>
+                    <Run Text=" / 3"/>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
