@@ -57,6 +57,7 @@ public partial class MainWindow : Window
     /// </summary>
     private void OnWindowClosing(object? sender, CancelEventArgs e)
     {
+#if !DEBUG
         if (DataContext is MainViewModel vm && !vm.IsUnlocked)
         {
             // ⛔ CHẶN ĐÓNG CỬA SỔ
@@ -69,6 +70,7 @@ public partial class MainWindow : Window
             Topmost = true;
             Activate();
         }
+#endif
     }
 
     /// <summary>

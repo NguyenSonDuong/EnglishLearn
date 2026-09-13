@@ -1,6 +1,8 @@
 <Window x:Class="EnglishLocker.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:English.ViewModel.ViewModels;assembly=English.ViewModel"
+        xmlns:views="clr-namespace:EnglishLocker.Views"
         Title="EnglishLocker"
         
         WindowStyle="None"
@@ -18,6 +20,11 @@
          ═══════════════════════════════════════════════════════════════════ -->
 
     <Window.Resources>
+        <!-- ── DataTemplate mapping cho Navigator dialogs & screens ── -->
+        <DataTemplate DataType="{x:Type vm:StartupWarningViewModel}">
+            <views:StartupWarningControl/>
+        </DataTemplate>
+
         <!-- ── Style cho RadioButton đáp án ── -->
         <Style x:Key="OptionRadioButton" TargetType="RadioButton">
             <Setter Property="Foreground" Value="White"/>
@@ -193,5 +200,69 @@
                 </TextBlock>
             </StackPanel>
         </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════════════
+             HỆ THỐNG ĐIỀU PHỐI DIALOG & MÀN HÌNH (INavigatorService)
+             Toàn bộ thông báo, cảnh báo, màn hình overlay đều hiển thị trên MainWindow
+             thông qua MainViewModel.Navigator.DialogStack (Z-Index cao nhất)
+             ═══════════════════════════════════════════════════════════════════ -->
+        <ItemsControl ItemsSource="{Binding Navigator.DialogStack}"
+                      Panel.ZIndex="1000">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <!-- Modal Overlay phủ toàn màn hình với nền mờ tối và căn giữa dialog -->
+                    <Grid Background="#D00A0A16">
+                        <ContentControl Content="{Binding}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"/>
+                    </Grid>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <Button Content="X"
+         Command="{Binding CloseCommand}"
+         HorizontalAlignment="Right"
+                 VerticalAlignment="Top"
+                Width="40" Height="40"
+         Margin="15,15,15,0">
+            <Button.Style>
+                <Style TargetType="Button">
+                    <Setter Property="Background" Value="#AA000000"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="FontSize" Value="15"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Padding" Value="0,0"/>
+                    <Setter Property="Cursor" Value="Hand"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="bg"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="10"
+                        Padding="{TemplateBinding Padding}">
+                                    <ContentPresenter HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#5a52e0"/>
+                                    </Trigger>
+                                    <Trigger Property="IsPressed" Value="True">
+                                        <Setter TargetName="bg" Property="Background" Value="#4a42c0"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </Button.Style>
+        </Button>
     </Grid>
 </Window>

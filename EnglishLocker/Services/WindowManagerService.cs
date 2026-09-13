@@ -70,7 +70,7 @@ public class WindowManagerService : IWindowManagerService
         var primaryScreen = allScreens.FirstOrDefault(s => s.Primary) 
                             ?? WinFormsScreen.PrimaryScreen 
                             ?? allScreens[0];
-
+#if !DEBUG
         // 3. MỞ CÁC BLACKOUT WINDOW TRÊN MÀN HÌNH PHỤ TRƯỚC
         foreach (var screen in allScreens)
         {
@@ -84,13 +84,13 @@ public class WindowManagerService : IWindowManagerService
             SetupAndShowWindow(blackout, screen, isPrimary: false);
             _blackoutWindows.Add(blackout);
         }
+#endif
 
         // 4. MỞ MAINWINDOW TRÊN MÀN HÌNH CHÍNH
         Debug.WriteLine($"[WindowManager] Đặt MainWindow lên màn hình chính: {primaryScreen.DeviceName} tại [{primaryScreen.Bounds.X}, {primaryScreen.Bounds.Y}, {primaryScreen.Bounds.Width}x{primaryScreen.Bounds.Height}]");
 
         _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         Application.Current.MainWindow = _mainWindow;
-
         SetupAndShowWindow(_mainWindow, primaryScreen, isPrimary: true);
 
         // Đảm bảo MainWindow luôn nằm trên cùng và nhận bàn phím

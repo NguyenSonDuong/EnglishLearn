@@ -40,6 +40,7 @@ public class ShellManagementService : IShellManagementService
     /// </summary>
     public void CheckAndInstallCustomShell()
     {
+#if !DEBUG
         try
         {
             // Lấy đường dẫn tuyệt đối của file thực thi (.exe) hiện tại
@@ -82,6 +83,10 @@ public class ShellManagementService : IShellManagementService
         {
             Debug.WriteLine($"[ShellManagement] Lỗi khi cài đặt Custom Shell: {ex.Message}");
         }
+#else
+        RestoreDefaultShell();
+#endif
+        
     }
 
     /// <summary>

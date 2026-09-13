@@ -6,8 +6,9 @@ namespace English.ViewModel.ViewModels;
 
 /// <summary>
 /// ViewModel cho màn hình cảnh báo người dùng trước khi kích hoạt Kiosk Mode khóa toàn bộ hệ thống.
+/// Kế thừa DialogViewModelBase để tự động tích hợp với INavigatorService trên MainWindow.
 /// </summary>
-public partial class StartupWarningViewModel : ObservableObject
+public partial class StartupWarningViewModel : DialogViewModelBase
 {
     // ──────────────────────────── Observable Properties ─────────────────────
 
@@ -39,12 +40,14 @@ public partial class StartupWarningViewModel : ObservableObject
     // ──────────────────────────── Relay Commands ────────────────────────────
 
     /// <summary>
-    /// Khung RelayCommand xử lý khi người dùng nhấn "Đồng ý" để bắt đầu học.
+    /// Khung RelayCommand xử lý khi người dùng nhấn "Đồng ý" để bắt đầu học:
+    /// Kích hoạt sự kiện Accepted và tự đóng Dialog khỏi Navigator DialogStack trên MainWindow.
     /// </summary>
     [RelayCommand]
     public void Accept()
     {
         Accepted?.Invoke();
+        Close();
     }
 
     /// <summary>

@@ -18,6 +18,13 @@ public partial class MainViewModel : ObservableObject
     private readonly ISystemControlService _systemControlService;
     private readonly IWindowManagerService _windowManagerService;
     private readonly IShellManagementService _shellManagementService;
+    private readonly INavigatorService _navigator;
+
+    /// <summary>
+    /// Service điều phối trung chuyển các dialog, thông báo và màn hình UserControl trên MainWindow.
+    /// MainWindow.xaml sẽ trực tiếp bind vào Navigator.DialogStack.
+    /// </summary>
+    public INavigatorService Navigator => _navigator;
 
     // ──────────────────────────── Internal State ────────────────────────────
 
@@ -60,21 +67,27 @@ public partial class MainViewModel : ObservableObject
         IQuestionService questionService,
         ISystemControlService systemControlService,
         IWindowManagerService windowManagerService,
-        IShellManagementService shellManagementService)
+        IShellManagementService shellManagementService,
+        INavigatorService navigator)
     {
         _questionService = questionService;
         _systemControlService = systemControlService;
         _windowManagerService = windowManagerService;
         _shellManagementService = shellManagementService;
+        _navigator = navigator;
 
         _currentIndex = 0;
         _cheatAttempts = 0;
 
         // Khóa Task Manager ngay khi khởi tạo
+#if !DEBUG
         _systemControlService.DisableTaskManager();
-
+#endif
         // Tải câu hỏi bất đồng bộ
         _ = LoadQuestionsAsync();
+
+        // Tự động hiển thị màn hình cảnh báo Kiosk-mode trên MainWindow thông qua Navigator
+        ShowStartupWarning();
     }
 
     // ──────────────────────────── Async Init ─────────────────────────────────
@@ -84,7 +97,7 @@ public partial class MainViewModel : ObservableObject
     {
         try
         {
-            _questions = await _questionService.GetRandomQuestionsAsync(10);
+            _questions = await _questionService.GetRandomQuestionsAsync(3);
             _currentIndex = 0;
             LoadCurrentQuestion();
         }
@@ -141,6 +154,12 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void Close()
+    {
+        Application.Current.Shutdown();
+    }
+
     // ──────────────────────────── Anti-Cheat ────────────────────────────────
 
     /// <summary>
@@ -192,5 +211,50 @@ public partial class MainViewModel : ObservableObject
         await Task.Delay(1500);
         _windowManagerService.UnlockAllScreens();
         await _shellManagementService.StartExplorerAndExitAsync();
+    }
+
+    // ──────────────────────────── Dialog & Screen Navigation ────────────────
+
+    /// <summary>
+    /// Mở màn hình cảnh báo khởi động Kiosk-mode trên MainWindow.
+    /// </summary>
+    [RelayCommand]
+    public void ShowStartupWarning()
+    {
+        _navigator.OpenDialog<StartupWarningViewModel>();
+    }
+
+    /// <summary>
+    /// Mở một màn hình / Dialog bất kỳ hiển thị trực tiếp lên MainWindow theo Generic ViewModel.
+    /// </summary>
+    public T OpenDialog<T>(params object?[] parameters) where T : class
+    {
+        return _navigator.OpenDialog<T>(parameters);
+    }
+
+    /// <summary>
+    /// Mở một màn hình / Dialog với delegate cấu hình khởi tạo.
+    /// </summary>
+    public T OpenDialog<T>(Action<T>? configure, params object?[] parameters) where T : class
+    {
+        return _navigator.OpenDialog<T>(configure, parameters);
+    }
+
+    /// <summary>
+    /// Đóng dialog đang nằm trên đỉnh MainWindow.
+    /// </summary>
+    [RelayCommand]
+    public void CloseTopDialog()
+    {
+        _navigator.CloseTopDialog();
+    }
+
+    /// <summary>
+    /// Đóng toàn bộ các dialog đang mở trên MainWindow.
+    /// </summary>
+    [RelayCommand]
+    public void CloseAllDialogs()
+    {
+        _navigator.CloseAllDialogs();
     }
 }

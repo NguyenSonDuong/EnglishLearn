@@ -31,7 +31,6 @@ public class QuestionRepository : Repository<Question>, IQuestionRepository
     {
         // SQLite không hỗ trợ NEWID(), dùng Guid ordering thay thế
         return await _dbSet
-            .OrderBy(q => Guid.NewGuid())
             .Take(count)
             .ToListAsync();
     }

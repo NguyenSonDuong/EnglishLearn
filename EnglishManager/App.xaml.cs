@@ -65,6 +65,7 @@ public partial class App : Application
         // ── In-App Dialog Service (Modal overlay trong giao diện) ──
         services.AddSingleton<InAppDialogService>();
         services.AddSingleton<IInAppDialogService>(sp => sp.GetRequiredService<InAppDialogService>());
+        services.AddSingleton<INavigatorService, NavigatorService>();
 
         // ── ViewModels (Quản lý nội bộ trong EnglishManager) ──
         services.AddTransient<DeckManagementViewModel>();

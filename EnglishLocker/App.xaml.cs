@@ -79,6 +79,7 @@ public partial class App : Application
         services.AddSingleton<IHookService, KeyboardHookService>();
         services.AddSingleton<IWindowManagerService, WindowManagerService>();
         services.AddSingleton<IShellManagementService, ShellManagementService>();
+        services.AddSingleton<INavigatorService, NavigatorService>();
 
         // ── ViewModels ──
         services.AddTransient<MainViewModel>();
@@ -87,7 +88,7 @@ public partial class App : Application
         // ── Views ──
         services.AddTransient<MainWindow>();
         services.AddTransient<BlackoutWindow>();
-        services.AddTransient<StartupWarningWindow>();
+        services.AddTransient<StartupWarningControl>();
     }
 
     protected override void OnExit(ExitEventArgs e)
