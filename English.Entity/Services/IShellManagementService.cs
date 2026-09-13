@@ -9,6 +9,18 @@ namespace English.Entity.Services;
 public interface IShellManagementService
 {
     /// <summary>
+    /// Tham số dòng lệnh dùng để nhận diện ứng dụng được kích hoạt bởi Windows Shell khi khởi động máy.
+    /// </summary>
+    public const string KioskShellArgument = "--kiosk-shell";
+
+    /// <summary>
+    /// Xác định xem ứng dụng hiện tại có đang được khởi chạy với vai trò Custom Windows Shell hay không.
+    /// Trả về true nếu ứng dụng được kích hoạt khi khởi động máy kèm tham số --kiosk-shell (hoặc explorer chưa chạy).
+    /// Trả về false nếu người dùng mở ứng dụng thủ công/thông thường.
+    /// </summary>
+    bool IsRunningAsShell { get; }
+
+    /// <summary>
     /// Kiểm tra và đăng ký đường dẫn file exe hiện tại làm Custom Shell
     /// trong nhánh HKCU Winlogon nếu chưa được thiết lập.
     /// </summary>

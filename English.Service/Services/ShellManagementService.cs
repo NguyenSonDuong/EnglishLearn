@@ -36,7 +36,13 @@ public class ShellManagementService : IShellManagementService
     private const string DefaultShell = "explorer.exe";
 
     /// <summary>
-    /// Kiểm tra và thiết lập file thực thi hiện tại làm Custom Shell của tài khoản.
+    /// Nhận diện xem ứng dụng có đang chạy với tư cách Windows Shell (được kích hoạt với cờ --kiosk-shell) hay không.
+    /// </summary>
+    public bool IsRunningAsShell { get; } = Environment.GetCommandLineArgs()
+        .Any(arg => string.Equals(arg, IShellManagementService.KioskShellArgument, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>
+    /// Kiểm tra và thiết lập file thực thi hiện tại làm Custom Shell của tài khoản kèm tham số --kiosk-shell.
     /// </summary>
     public void CheckAndInstallCustomShell()
     {
@@ -54,6 +60,9 @@ public class ShellManagementService : IShellManagementService
                 return;
             }
 
+            // Lệnh đăng ký Shell: bao gồm đường dẫn bọc nháy kép và tham số --kiosk-shell
+            string expectedShellCommand = $"\"{currentExePath}\" {IShellManagementService.KioskShellArgument}";
+
             // Mở hoặc tạo nhánh Registry trong HKCU
             using var key = Registry.CurrentUser.CreateSubKey(WinlogonSubKey, writable: true);
             if (key == null)
@@ -64,15 +73,15 @@ public class ShellManagementService : IShellManagementService
 
             var currentShellValue = key.GetValue(ShellValueName) as string;
 
-            // Nếu giá trị chưa có hoặc khác với đường dẫn exe hiện tại thì cập nhật
-            if (!string.Equals(currentShellValue, currentExePath, StringComparison.OrdinalIgnoreCase))
+            // Nếu giá trị chưa có hoặc khác với câu lệnh shell kèm tham số thì cập nhật
+            if (!string.Equals(currentShellValue, expectedShellCommand, StringComparison.OrdinalIgnoreCase))
             {
-                key.SetValue(ShellValueName, currentExePath, RegistryValueKind.String);
-                Debug.WriteLine($"[ShellManagement] Đã đăng ký Custom Shell thành công: '{currentExePath}'");
+                key.SetValue(ShellValueName, expectedShellCommand, RegistryValueKind.String);
+                Debug.WriteLine($"[ShellManagement] Đã đăng ký Custom Shell thành công: '{expectedShellCommand}'");
             }
             else
             {
-                Debug.WriteLine("[ShellManagement] Custom Shell đã được cấu hình trước đó, không cần thay đổi.");
+                Debug.WriteLine("[ShellManagement] Custom Shell đã được cấu hình trước đó với cờ tham số, không cần thay đổi.");
             }
         }
         catch (UnauthorizedAccessException ex)
@@ -86,7 +95,6 @@ public class ShellManagementService : IShellManagementService
 #else
         RestoreDefaultShell();
 #endif
-        
     }
 
     /// <summary>
@@ -96,22 +104,32 @@ public class ShellManagementService : IShellManagementService
     {
         try
         {
-            Debug.WriteLine("[ShellManagement] Đang kích hoạt Windows Explorer...");
+            // Kiểm tra xem explorer.exe đã chạy chưa
+            bool isExplorerRunning = Process.GetProcessesByName("explorer").Length > 0;
 
-            // Lấy đường dẫn tuyệt đối của explorer.exe từ thư mục Windows
-            string explorerPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Windows),
-                "explorer.exe");
-
-            // Khởi chạy tiến trình explorer.exe độc lập với hệ điều hành
-            var startInfo = new ProcessStartInfo
+            if (!isExplorerRunning || IsRunningAsShell)
             {
-                FileName = explorerPath,
-                UseShellExecute = true
-            };
-            Process.Start(startInfo);
+                Debug.WriteLine("[ShellManagement] Đang kích hoạt Windows Explorer...");
 
-            Debug.WriteLine("[ShellManagement] Windows Explorer đã được khởi động thành công.");
+                // Lấy đường dẫn tuyệt đối của explorer.exe từ thư mục Windows
+                string explorerPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+                    "explorer.exe");
+
+                // Khởi chạy tiến trình explorer.exe độc lập với hệ điều hành
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = explorerPath,
+                    UseShellExecute = true
+                };
+                Process.Start(startInfo);
+
+                Debug.WriteLine("[ShellManagement] Windows Explorer đã được khởi động thành công.");
+            }
+            else
+            {
+                Debug.WriteLine("[ShellManagement] Mở thông thường và Explorer đã chạy sẵn, bỏ qua việc khởi chạy lại Explorer.");
+            }
         }
         catch (Exception ex)
         {

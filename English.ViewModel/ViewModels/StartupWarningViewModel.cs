@@ -2,6 +2,8 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
+using English.Entity.Services;
+
 namespace English.ViewModel.ViewModels;
 
 /// <summary>
@@ -17,6 +19,28 @@ public partial class StartupWarningViewModel : DialogViewModelBase
 
     [ObservableProperty]
     private string _subtitle = "Vui lòng đọc kỹ thông tin dưới đây trước khi quyết định tiếp tục phiên học:";
+
+    /// <summary>
+    /// Cho biết ứng dụng có đang chạy với tư cách Windows Shell khởi động máy hay không.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isRunningAsShell;
+
+    public StartupWarningViewModel(IShellManagementService? shellService = null)
+    {
+        _isRunningAsShell = shellService?.IsRunningAsShell ?? false;
+
+        if (_isRunningAsShell)
+        {
+            Title = "🔒 CẢNH BÁO: CHẾ ĐỘ KHÓA SHELL KHỞI ĐỘNG MÁY";
+            Subtitle = "Ứng dụng được kích hoạt tự động với vai trò Windows Shell khi đăng nhập máy tính:";
+        }
+        else
+        {
+            Title = "CẢNH BÁO QUAN TRỌNG VỀ CHẾ ĐỘ KHÓA";
+            Subtitle = "Ứng dụng đang mở ở chế độ thông thường (Thử nghiệm / Không phải Shell khởi động máy):";
+        }
+    }
 
     [ObservableProperty]
     private string _lockWarningText =
