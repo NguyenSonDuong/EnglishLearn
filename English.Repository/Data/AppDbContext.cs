@@ -1,20 +1,40 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using English.Entity.Entities;
 
 namespace English.Repository.Data;
 
-/// <summary>DbContext chính của ứng dụng EnglishLocker.</summary>
+/// <summary>
+/// DbContext chính của ứng dụng EnglishLocker cấu hình theo cấu trúc Dictionary Cluster.
+/// </summary>
 public class AppDbContext : DbContext
 {
-    public DbSet<AppConfiguration> AppConfigurations => Set<AppConfiguration>();
-    public DbSet<Deck> Decks => Set<Deck>();
-    public DbSet<LearningMaterial> LearningMaterials => Set<LearningMaterial>();
-    public DbSet<Question> Questions => Set<Question>();
-    public DbSet<StudyRecord> StudyRecords => Set<StudyRecord>();
-    public DbSet<StudyHistory> StudyHistories => Set<StudyHistory>();
-    public DbSet<EmergencyLog> EmergencyLogs => Set<EmergencyLog>();
+    // ── Private Value Converter & Comparer (bắt đầu bằng tiền tố _) ──
+    private static readonly ValueConverter<List<string>, string> _stringListConverter = new(
+        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+
+    private static readonly ValueComparer<List<string>> _stringListComparer = new(
+        (c1, c2) => c1 != null && c2 != null ? c1.SequenceEqual(c2) : c1 == c2,
+        c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+        c => c.ToList());
+
+    // ── DbSets ──
+    public DbSet<Vocabulary> Vocabularies => Set<Vocabulary>();
+    public DbSet<VocabularyMeaning> VocabularyMeanings => Set<VocabularyMeaning>();
+    public DbSet<MeaningExample> MeaningExamples => Set<MeaningExample>();
 
     public static string CurrentDatabasePath { get; set; } = "englishlocker.db";
+
+    public AppDbContext()
+    {
+    }
+
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    {
+    }
 
     public void SwitchDatabase(string newDatabasePath)
     {
@@ -22,7 +42,7 @@ public class AppDbContext : DbContext
         Database.CloseConnection();
         Database.SetConnectionString($"Data Source={newDatabasePath}");
         ChangeTracker.Clear();
-        Database.Migrate();
+        Database.EnsureCreated();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -37,91 +57,98 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // ── AppConfiguration: PK = ConfigKey (string) ──
-        modelBuilder.Entity<AppConfiguration>(entity =>
+        // ───────────────────────────────────────────────
+        // 1. Vocabulary Entity Configuration
+        // ───────────────────────────────────────────────
+        modelBuilder.Entity<Vocabulary>(entity =>
         {
-            entity.ToTable("AppConfigurations");
-            entity.HasKey(e => e.ConfigKey);
-        });
-
-        // ── Deck ──
-        modelBuilder.Entity<Deck>(entity =>
-        {
-            entity.ToTable("Decks");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.IsActive).HasDefaultValue(true);
-        });
-
-        // ── LearningMaterial ──
-        modelBuilder.Entity<LearningMaterial>(entity =>
-        {
-            entity.ToTable("LearningMaterials");
+            entity.ToTable("Vocabularies");
             entity.HasKey(e => e.Id);
 
-            // 1-N: Deck → LearningMaterials
-            entity.HasOne(e => e.Deck)
-                  .WithMany(d => d.LearningMaterials)
-                  .HasForeignKey(e => e.DeckId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.WordText)
+                  .IsRequired()
+                  .HasMaxLength(200);
 
-            // Enum lưu dạng int
-            entity.Property(e => e.CategoryType)
+            entity.Property(e => e.Phonetic_UK)
+                  .HasMaxLength(100);
+
+            entity.Property(e => e.Phonetic_US)
+                  .HasMaxLength(100);
+
+            entity.Property(e => e.AudioPath_UK)
+                  .HasMaxLength(500);
+
+            entity.Property(e => e.AudioPath_US)
+                  .HasMaxLength(500);
+
+            entity.Property(e => e.Level)
                   .HasConversion<int>();
+
+            // Value Converter map List<string> sang JSON text cho SQLite
+            entity.Property(e => e.WordFamily)
+                  .HasConversion(_stringListConverter, _stringListComparer);
+
+            // Quan hệ 1-N: Vocabulary (1) -> (N) VocabularyMeaning
+            entity.HasMany(e => e.Meanings)
+                  .WithOne(m => m.Vocabulary)
+                  .HasForeignKey(m => m.VocabularyId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ── Question ──
-        modelBuilder.Entity<Question>(entity =>
+        // ───────────────────────────────────────────────
+        // 2. VocabularyMeaning Entity Configuration
+        // ───────────────────────────────────────────────
+        modelBuilder.Entity<VocabularyMeaning>(entity =>
         {
-            entity.ToTable("Questions");
+            entity.ToTable("VocabularyMeanings");
             entity.HasKey(e => e.Id);
 
-            // 1-N: LearningMaterial → Questions
-            entity.HasOne(e => e.LearningMaterial)
-                  .WithMany(lm => lm.Questions)
-                  .HasForeignKey(e => e.LearningMaterialId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.Property(e => e.TestType)
+            entity.Property(e => e.WordClass)
                   .HasConversion<int>();
-        });
 
-        // ── StudyRecord (1-1 với Question) ──
-        modelBuilder.Entity<StudyRecord>(entity =>
-        {
-            entity.ToTable("StudyRecords");
-            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Definition_EN)
+                  .IsRequired()
+                  .HasMaxLength(1000);
 
-            // 1-1: Question ↔ StudyRecord
-            entity.HasOne(e => e.Question)
-                  .WithOne(q => q.StudyRecord)
-                  .HasForeignKey<StudyRecord>(e => e.QuestionId)
-                  .OnDelete(DeleteBehavior.Cascade);
+            entity.Property(e => e.Definition_VI)
+                  .IsRequired()
+                  .HasMaxLength(1000);
 
-            // Unique constraint trên QuestionId (đảm bảo 1-1)
-            entity.HasIndex(e => e.QuestionId)
-                  .IsUnique();
+            entity.Property(e => e.Context)
+                  .HasConversion<int>();
 
-            entity.Property(e => e.EasinessFactor)
-                  .HasDefaultValue(2.5);
-        });
+            // Value Converter map List<string> sang JSON text cho SQLite
+            entity.Property(e => e.Synonyms)
+                  .HasConversion(_stringListConverter, _stringListComparer);
 
-        // ── StudyHistory (1-N với Question) ──
-        modelBuilder.Entity<StudyHistory>(entity =>
-        {
-            entity.ToTable("StudyHistories");
-            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Antonyms)
+                  .HasConversion(_stringListConverter, _stringListComparer);
 
-            entity.HasOne(e => e.Question)
-                  .WithMany(q => q.StudyHistories)
-                  .HasForeignKey(e => e.QuestionId)
+            // Quan hệ 1-N: VocabularyMeaning (1) -> (N) MeaningExample
+            entity.HasMany(e => e.Examples)
+                  .WithOne(ex => ex.Meaning)
+                  .HasForeignKey(ex => ex.MeaningId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ── EmergencyLog ──
-        modelBuilder.Entity<EmergencyLog>(entity =>
+        // ───────────────────────────────────────────────
+        // 3. MeaningExample Entity Configuration
+        // ───────────────────────────────────────────────
+        modelBuilder.Entity<MeaningExample>(entity =>
         {
-            entity.ToTable("EmergencyLogs");
+            entity.ToTable("MeaningExamples");
             entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Sentence_EN)
+                  .IsRequired()
+                  .HasMaxLength(1000);
+
+            entity.Property(e => e.Sentence_VI)
+                  .IsRequired()
+                  .HasMaxLength(1000);
+
+            entity.Property(e => e.HighlightedTarget)
+                  .HasMaxLength(200);
         });
     }
 }

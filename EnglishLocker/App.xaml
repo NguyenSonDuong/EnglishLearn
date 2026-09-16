@@ -12,5 +12,6 @@
     <Application.Resources>
         <!-- Đăng ký converter dùng chung cho toàn app -->
         <conv:CheatCountToVisibilityConverter x:Key="CheatVisibilityConverter"/>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
     </Application.Resources>
 </Application>

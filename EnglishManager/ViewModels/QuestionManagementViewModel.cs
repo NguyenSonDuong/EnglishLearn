@@ -3,17 +3,44 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using English.Entity.DTOs;
 using English.Entity.Enums;
-using English.Entity.Services;
 using EnglishManager.Services;
 
 namespace EnglishManager.ViewModels;
 
 public partial class QuestionManagementViewModel : ObservableObject
 {
-    private readonly IQuestionService _questionService;
-    private readonly ILearningMaterialService _materialService;
-    private readonly IDeckService _deckService;
     private readonly IInAppDialogService _dialogService;
+
+    public static readonly List<QuestionDto> MockQuestions = new()
+    {
+        new QuestionDto
+        {
+            Id = Guid.NewGuid(),
+            LearningMaterialId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            TestType = TestType.ReverseTranslation,
+            Prompt = "Nghĩa của từ 'Abandon' là gì?",
+            CorrectAnswer = "Từ bỏ, ruồng bỏ",
+            Options = new List<string> { "Từ bỏ, ruồng bỏ", "Giữ lại", "Chào đón", "Xây dựng" }
+        },
+        new QuestionDto
+        {
+            Id = Guid.NewGuid(),
+            LearningMaterialId = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+            TestType = TestType.ReverseTranslation,
+            Prompt = "Nghĩa của từ 'Brilliant' là gì?",
+            CorrectAnswer = "Xuất sắc, rực rỡ",
+            Options = new List<string> { "Tối tăm", "Xuất sắc, rực rỡ", "Chậm chạp", "Yếu ớt" }
+        },
+        new QuestionDto
+        {
+            Id = Guid.NewGuid(),
+            LearningMaterialId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            TestType = TestType.ReverseTranslation,
+            Prompt = "Nghĩa của từ 'Coherent' là gì?",
+            CorrectAnswer = "Mạch lạc, chặt chẽ",
+            Options = new List<string> { "Rời rạc", "Mạch lạc, chặt chẽ", "Khó hiểu", "Mơ hồ" }
+        }
+    };
 
     [ObservableProperty]
     private ObservableCollection<DeckDto> _decks = new();
@@ -84,15 +111,8 @@ public partial class QuestionManagementViewModel : ObservableObject
     [ObservableProperty]
     private string _formTitle = "Thêm câu hỏi mới";
 
-    public QuestionManagementViewModel(
-        IQuestionService questionService,
-        ILearningMaterialService materialService,
-        IDeckService deckService,
-        IInAppDialogService dialogService)
+    public QuestionManagementViewModel(IInAppDialogService dialogService)
     {
-        _questionService = questionService;
-        _materialService = materialService;
-        _deckService = deckService;
         _dialogService = dialogService;
     }
 
@@ -121,23 +141,12 @@ public partial class QuestionManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            if (deck != null)
-            {
-                var matList = await _materialService.GetByDeckIdAsync(deck.Id);
-                Materials = new ObservableCollection<LearningMaterialDto>(matList);
-            }
-            else
-            {
-                // Toàn bộ materials
-                var allMat = new List<LearningMaterialDto>();
-                foreach (var d in Decks)
-                {
-                    var items = await _materialService.GetByDeckIdAsync(d.Id);
-                    allMat.AddRange(items);
-                }
-                Materials = new ObservableCollection<LearningMaterialDto>(allMat);
-            }
+            await Task.Yield();
+            var matList = deck != null
+                ? MaterialManagementViewModel.MockMaterials.Where(m => m.DeckId == deck.Id).ToList()
+                : MaterialManagementViewModel.MockMaterials.ToList();
 
+            Materials = new ObservableCollection<LearningMaterialDto>(matList);
             FilterMaterial = null;
             await LoadQuestionsForFilterAsync();
         }
@@ -157,16 +166,28 @@ public partial class QuestionManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            var deckList = await _deckService.GetAllDecksAsync();
-            Decks = new ObservableCollection<DeckDto>(deckList);
-
-            var allMat = new List<LearningMaterialDto>();
-            foreach (var d in Decks)
+            await Task.Yield();
+            Decks = new ObservableCollection<DeckDto>(DeckManagementViewModel.MockDecks.Select(d => new DeckDto
             {
-                var items = await _materialService.GetByDeckIdAsync(d.Id);
-                allMat.AddRange(items);
-            }
-            Materials = new ObservableCollection<LearningMaterialDto>(allMat);
+                Id = d.Id,
+                Name = d.Name,
+                Description = d.Description,
+                IsActive = d.IsActive,
+                MaterialCount = d.MaterialCount
+            }));
+
+            Materials = new ObservableCollection<LearningMaterialDto>(MaterialManagementViewModel.MockMaterials.Select(m => new LearningMaterialDto
+            {
+                Id = m.Id,
+                DeckId = m.DeckId,
+                Term = m.Term,
+                Meaning = m.Meaning,
+                CategoryType = m.CategoryType,
+                ContextTag = m.ContextTag,
+                Phonetics = m.Phonetics,
+                ExampleSentence = m.ExampleSentence,
+                QuestionCount = m.QuestionCount
+            }));
 
             await LoadQuestionsForFilterAsync();
         }
@@ -185,23 +206,23 @@ public partial class QuestionManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            var list = new List<QuestionDto>();
+            await Task.Yield();
+            var materialIds = Materials.Select(m => m.Id).ToHashSet();
+            var list = FilterMaterial != null
+                ? MockQuestions.Where(q => q.LearningMaterialId == FilterMaterial.Id).ToList()
+                : MockQuestions.Where(q => materialIds.Contains(q.LearningMaterialId)).ToList();
 
-            if (FilterMaterial != null)
+            AllQuestions = new ObservableCollection<QuestionDto>(list.Select(q => new QuestionDto
             {
-                list = await _questionService.GetByMaterialIdAsync(FilterMaterial.Id);
-            }
-            else
-            {
-                // Lấy từ danh sách Materials hiện tại
-                foreach (var mat in Materials)
-                {
-                    var qList = await _questionService.GetByMaterialIdAsync(mat.Id);
-                    list.AddRange(qList);
-                }
-            }
-
-            AllQuestions = new ObservableCollection<QuestionDto>(list);
+                Id = q.Id,
+                LearningMaterialId = q.LearningMaterialId,
+                TestType = q.TestType,
+                Prompt = q.Prompt,
+                CorrectAnswer = q.CorrectAnswer,
+                Options = new List<string>(q.Options),
+                AudioLocalPath = q.AudioLocalPath,
+                ImageLocalPath = q.ImageLocalPath
+            }));
             ApplyFilter();
 
             if (SelectedQuestion != null)
@@ -326,10 +347,12 @@ public partial class QuestionManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
+            await Task.Yield();
             if (EditingQuestionId == null)
             {
                 var dto = new QuestionDto
                 {
+                    Id = Guid.NewGuid(),
                     LearningMaterialId = FormMaterialId,
                     TestType = FormTestType,
                     Prompt = FormPrompt.Trim(),
@@ -338,23 +361,22 @@ public partial class QuestionManagementViewModel : ObservableObject
                     AudioLocalPath = string.IsNullOrWhiteSpace(FormAudioLocalPath) ? null : FormAudioLocalPath.Trim(),
                     ImageLocalPath = string.IsNullOrWhiteSpace(FormImageLocalPath) ? null : FormImageLocalPath.Trim()
                 };
-                var created = await _questionService.CreateAsync(dto);
+                MockQuestions.Add(dto);
                 await _dialogService.ShowSuccessAsync("Thành công", $"Đã thêm mới câu hỏi cho từ vựng.");
             }
             else
             {
-                var dto = new QuestionDto
+                var existing = MockQuestions.FirstOrDefault(q => q.Id == EditingQuestionId.Value);
+                if (existing != null)
                 {
-                    Id = EditingQuestionId.Value,
-                    LearningMaterialId = FormMaterialId,
-                    TestType = FormTestType,
-                    Prompt = FormPrompt.Trim(),
-                    CorrectAnswer = FormCorrectAnswer.Trim(),
-                    Options = options,
-                    AudioLocalPath = string.IsNullOrWhiteSpace(FormAudioLocalPath) ? null : FormAudioLocalPath.Trim(),
-                    ImageLocalPath = string.IsNullOrWhiteSpace(FormImageLocalPath) ? null : FormImageLocalPath.Trim()
-                };
-                await _questionService.UpdateAsync(dto);
+                    existing.LearningMaterialId = FormMaterialId;
+                    existing.TestType = FormTestType;
+                    existing.Prompt = FormPrompt.Trim();
+                    existing.CorrectAnswer = FormCorrectAnswer.Trim();
+                    existing.Options = options;
+                    existing.AudioLocalPath = string.IsNullOrWhiteSpace(FormAudioLocalPath) ? null : FormAudioLocalPath.Trim();
+                    existing.ImageLocalPath = string.IsNullOrWhiteSpace(FormImageLocalPath) ? null : FormImageLocalPath.Trim();
+                }
                 await _dialogService.ShowSuccessAsync("Thành công", $"Đã cập nhật câu hỏi.");
             }
 
@@ -396,7 +418,8 @@ public partial class QuestionManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            await _questionService.DeleteAsync(item.Id);
+            await Task.Yield();
+            MockQuestions.RemoveAll(q => q.Id == item.Id);
             await _dialogService.ShowSuccessAsync("Đã xóa", "Câu hỏi đã được xóa thành công.");
             await LoadQuestionsForFilterAsync();
         }

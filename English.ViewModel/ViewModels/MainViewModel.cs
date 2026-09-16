@@ -49,7 +49,7 @@ public partial class MainViewModel : ObservableObject
 #endif
 
         // Điều hướng tới màn hình bài kiểm tra (Quiz UserControl) làm trang chủ mặc định
-        _navigator.NavigateTo<QuizViewModel>(addToStack: true);
+        _navigator.NavigateTo<LearnWordViewModel>(addToStack: false);
 
         // Hiển thị màn hình cảnh báo Kiosk-mode trên Dialog overlay
         ShowStartupWarning();

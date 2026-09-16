@@ -1,10 +1,8 @@
 using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using English.Entity.Repositories;
 using English.Entity.Services;
 using English.Repository.Data;
-using English.Repository.Repositories;
 using English.Service.Services;
 using EnglishManager.Services;
 using EnglishManager.ViewModels;
@@ -27,11 +25,11 @@ public partial class App : Application
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
-        // 1. Tự động kiểm tra và migrate cơ sở dữ liệu SQLite
+        // 1. Tự động kiểm tra và khởi tạo cơ sở dữ liệu SQLite
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            dbContext.Database.Migrate();
+            dbContext.Database.EnsureCreated();
         }
 
         // 2. Khởi tạo và hiển thị duy nhất 1 cửa sổ MainWindow
@@ -44,22 +42,7 @@ public partial class App : Application
         // ── Database ──
         services.AddDbContext<AppDbContext>();
 
-        // ── Repositories ──
-        services.AddScoped<IDeckRepository, DeckRepository>();
-        services.AddScoped<ILearningMaterialRepository, LearningMaterialRepository>();
-        services.AddScoped<IQuestionRepository, QuestionRepository>();
-        services.AddScoped<IStudyRecordRepository, StudyRecordRepository>();
-        services.AddScoped<IStudyHistoryRepository, StudyHistoryRepository>();
-        services.AddScoped<IEmergencyLogRepository, EmergencyLogRepository>();
-        services.AddScoped<IAppConfigurationRepository, AppConfigurationRepository>();
-
-        // ── Services (Domain) ──
-        services.AddScoped<IDeckService, DeckService>();
-        services.AddScoped<ILearningMaterialService, LearningMaterialService>();
-        services.AddScoped<IQuestionService, QuestionService>();
-        services.AddScoped<IStudyService, StudyService>();
-        services.AddScoped<IEmergencyLogService, EmergencyLogService>();
-        services.AddScoped<IAppConfigurationService, AppConfigurationService>();
+        // ── Domain / Utility Services ──
         services.AddScoped<IExcelImportService, ExcelImportService>();
 
         // ── In-App Dialog Service (Modal overlay trong giao diện) ──

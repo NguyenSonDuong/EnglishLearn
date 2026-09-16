@@ -2,10 +2,8 @@ using System.Windows;
 using Application = System.Windows.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using English.Entity.Repositories;
 using English.Entity.Services;
 using English.Repository.Data;
-using English.Repository.Repositories;
 using English.Service.Services;
 using English.ViewModel.ViewModels;
 using EnglishLocker.Views;
@@ -33,11 +31,11 @@ public partial class App : Application
         ConfigureServices(services);
         _serviceProvider = services.BuildServiceProvider();
 
-        // 2. Auto-migrate database (đảm bảo DB sẵn sàng trước khi mở cửa sổ)
+        // 2. Tự động kiểm tra và khởi tạo cơ sở dữ liệu SQLite
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            dbContext.Database.Migrate();
+            dbContext.Database.EnsureCreated();
         }
 
         // 3. Đăng ký ứng dụng làm Custom Shell nếu chưa được cấu hình
@@ -57,23 +55,6 @@ public partial class App : Application
         // ── Database ──
         services.AddDbContext<AppDbContext>();
 
-        // ── Repositories ──
-        services.AddScoped<IDeckRepository, DeckRepository>();
-        services.AddScoped<ILearningMaterialRepository, LearningMaterialRepository>();
-        services.AddScoped<IQuestionRepository, QuestionRepository>();
-        services.AddScoped<IStudyRecordRepository, StudyRecordRepository>();
-        services.AddScoped<IStudyHistoryRepository, StudyHistoryRepository>();
-        services.AddScoped<IEmergencyLogRepository, EmergencyLogRepository>();
-        services.AddScoped<IAppConfigurationRepository, AppConfigurationRepository>();
-
-        // ── Services (Domain) ──
-        services.AddScoped<IDeckService, DeckService>();
-        services.AddScoped<ILearningMaterialService, LearningMaterialService>();
-        services.AddScoped<IQuestionService, QuestionService>();
-        services.AddScoped<IStudyService, StudyService>();
-        services.AddScoped<IEmergencyLogService, EmergencyLogService>();
-        services.AddScoped<IAppConfigurationService, AppConfigurationService>();
-
         // ── Services (System) ──
         services.AddSingleton<ISystemControlService, SystemControlService>();
         services.AddSingleton<IHookService, KeyboardHookService>();
@@ -85,12 +66,14 @@ public partial class App : Application
         services.AddTransient<MainViewModel>();
         services.AddTransient<QuizViewModel>();
         services.AddTransient<StartupWarningViewModel>();
+        services.AddTransient<LearnWordViewModel>();
 
         // ── Views ──
         services.AddTransient<MainWindow>();
         services.AddTransient<BlackoutWindow>();
         services.AddTransient<QuizControl>();
         services.AddTransient<StartupWarningControl>();
+        services.AddTransient<LearnWordControl>();
     }
 
     protected override void OnExit(ExitEventArgs e)

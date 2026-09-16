@@ -1,51 +1,50 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
-using English.Repository.Data;
 using English.Entity.Repositories;
+using English.Repository.Data;
 
 namespace English.Repository.Repositories;
 
 /// <summary>
-/// Triển khai generic repository dùng EF Core.
+/// Triển khai Generic Repository cho Entity Framework Core.
 /// </summary>
 /// <typeparam name="T">Kiểu thực thể dữ liệu.</typeparam>
 public class Repository<T> : IRepository<T> where T : class
 {
-    protected readonly AppDbContext _context;
-    protected readonly DbSet<T> _dbSet;
+    private readonly AppDbContext _dbContext;
 
-    public Repository(AppDbContext context)
+    public Repository(AppDbContext dbContext)
     {
-        _context = context;
-        _dbSet = context.Set<T>();
+        _dbContext = dbContext;
     }
 
     public virtual async Task<T?> GetByIdAsync(Guid id)
     {
-        return await _dbSet.FindAsync(id);
+        return await _dbContext.Set<T>().FindAsync(id);
     }
 
     public virtual async Task<List<T>> GetAllAsync()
     {
-        return await _dbSet.ToListAsync();
+        return await _dbContext.Set<T>().ToListAsync();
     }
 
-    public async Task AddAsync(T entity)
+    public virtual async Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
-        await _dbSet.AddAsync(entity);
+        return await _dbContext.Set<T>().Where(predicate).ToListAsync();
     }
 
-    public void Update(T entity)
+    public virtual async Task AddAsync(T entity)
     {
-        _dbSet.Update(entity);
+        await _dbContext.Set<T>().AddAsync(entity);
     }
 
-    public void Delete(T entity)
+    public virtual void Update(T entity)
     {
-        _dbSet.Remove(entity);
+        _dbContext.Set<T>().Update(entity);
     }
 
-    public async Task SaveChangesAsync()
+    public virtual void Delete(T entity)
     {
-        await _context.SaveChangesAsync();
+        _dbContext.Set<T>().Remove(entity);
     }
 }

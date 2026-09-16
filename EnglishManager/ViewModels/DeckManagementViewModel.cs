@@ -2,15 +2,33 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using English.Entity.DTOs;
-using English.Entity.Services;
 using EnglishManager.Services;
 
 namespace EnglishManager.ViewModels;
 
 public partial class DeckManagementViewModel : ObservableObject
 {
-    private readonly IDeckService _deckService;
     private readonly IInAppDialogService _dialogService;
+
+    public static readonly List<DeckDto> MockDecks = new()
+    {
+        new DeckDto
+        {
+            Id = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Name = "Oxford 3000 Core",
+            Description = "Bộ từ vựng tiếng Anh giao tiếp cốt lõi Oxford 3000",
+            IsActive = true,
+            MaterialCount = 2
+        },
+        new DeckDto
+        {
+            Id = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Name = "IELTS Academic",
+            Description = "Từ vựng học thuật chuyên sâu cho kỳ thi IELTS",
+            IsActive = true,
+            MaterialCount = 1
+        }
+    };
 
     [ObservableProperty]
     private ObservableCollection<DeckDto> _decks = new();
@@ -46,9 +64,8 @@ public partial class DeckManagementViewModel : ObservableObject
     [ObservableProperty]
     private string _formTitle = "Thêm bộ đề mới";
 
-    public DeckManagementViewModel(IDeckService deckService, IInAppDialogService dialogService)
+    public DeckManagementViewModel(IInAppDialogService dialogService)
     {
-        _deckService = deckService;
         _dialogService = dialogService;
     }
 
@@ -71,8 +88,15 @@ public partial class DeckManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            var list = await _deckService.GetAllDecksAsync();
-            Decks = new ObservableCollection<DeckDto>(list);
+            await Task.Yield();
+            Decks = new ObservableCollection<DeckDto>(MockDecks.Select(d => new DeckDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Description = d.Description,
+                IsActive = d.IsActive,
+                MaterialCount = d.MaterialCount
+            }));
             ApplyFilter();
 
             if (SelectedDeck != null)
@@ -151,30 +175,32 @@ public partial class DeckManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
+            await Task.Yield();
             if (EditingDeckId == null)
             {
                 // Thêm mới
                 var dto = new DeckDto
                 {
+                    Id = Guid.NewGuid(),
                     Name = FormName.Trim(),
                     Description = string.IsNullOrWhiteSpace(FormDescription) ? null : FormDescription.Trim(),
-                    IsActive = FormIsActive
+                    IsActive = FormIsActive,
+                    MaterialCount = 0
                 };
-                var created = await _deckService.CreateDeckAsync(dto);
-                await _dialogService.ShowSuccessAsync("Thành công", $"Đã tạo mới bộ đề '{created.Name}'.");
+                MockDecks.Add(dto);
+                await _dialogService.ShowSuccessAsync("Thành công", $"Đã tạo mới bộ đề '{dto.Name}'.");
             }
             else
             {
                 // Cập nhật
-                var dto = new DeckDto
+                var existing = MockDecks.FirstOrDefault(d => d.Id == EditingDeckId.Value);
+                if (existing != null)
                 {
-                    Id = EditingDeckId.Value,
-                    Name = FormName.Trim(),
-                    Description = string.IsNullOrWhiteSpace(FormDescription) ? null : FormDescription.Trim(),
-                    IsActive = FormIsActive
-                };
-                await _deckService.UpdateDeckAsync(dto);
-                await _dialogService.ShowSuccessAsync("Thành công", $"Đã cập nhật bộ đề '{dto.Name}'.");
+                    existing.Name = FormName.Trim();
+                    existing.Description = string.IsNullOrWhiteSpace(FormDescription) ? null : FormDescription.Trim();
+                    existing.IsActive = FormIsActive;
+                }
+                await _dialogService.ShowSuccessAsync("Thành công", $"Đã cập nhật bộ đề '{FormName.Trim()}'.");
             }
 
             IsEditing = false;
@@ -215,7 +241,8 @@ public partial class DeckManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            await _deckService.DeleteDeckAsync(item.Id);
+            await Task.Yield();
+            MockDecks.RemoveAll(d => d.Id == item.Id);
             await _dialogService.ShowSuccessAsync("Đã xóa", $"Bộ đề '{item.Name}' đã được xóa thành công.");
             await LoadDecksAsync();
         }
@@ -236,8 +263,12 @@ public partial class DeckManagementViewModel : ObservableObject
 
         try
         {
-            item.IsActive = !item.IsActive;
-            await _deckService.UpdateDeckAsync(item);
+            await Task.Yield();
+            var target = MockDecks.FirstOrDefault(d => d.Id == item.Id);
+            if (target != null)
+            {
+                target.IsActive = !target.IsActive;
+            }
             await LoadDecksAsync();
         }
         catch (Exception ex)

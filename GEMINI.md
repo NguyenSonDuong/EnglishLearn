@@ -17,7 +17,7 @@ Tài liệu này định nghĩa toàn bộ quy tắc kiến trúc, quy chuẩn m
 ---
 
 ## 2. QUY TẮC KIẾN TRÚC PHÂN TẦNG (BẮT BUỘC TUÂN THỦ)
-
+- **Private Fields:** Tất cả các biến private (bao gồm cả các field được inject qua Dependency Injection) bắt buộc phải bắt đầu bằng tiền tố `_` (ví dụ: `_dbContext`, `_isInitialized`) và sử dụng kiểu camelCase.
 Giải pháp tuân theo kiến trúc phân tầng độc lập (**Clean / Onion Architecture**), lấy `English.Entity` làm **trung tâm tuyệt đối**.
 
 ### Sơ đồ phụ thuộc (Dependency Graph)

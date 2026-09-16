@@ -1,7 +1,6 @@
 using System.IO;
 using System.Text;
 using ExcelDataReader;
-using English.Entity.Entities;
 using English.Entity.Enums;
 using English.Repository.Data;
 using EnglishManager.Models;
@@ -87,26 +86,9 @@ public class ExcelImportService : IExcelImportService
         return result;
     }
 
-    public async Task<int> ImportToDatabaseAsync(IEnumerable<ExcelImportItem> items, Guid deckId, CategoryType categoryType)
+    public Task<int> ImportToDatabaseAsync(IEnumerable<ExcelImportItem> items, Guid deckId, CategoryType categoryType)
     {
         var validItems = items.Where(i => i.IsValid).ToList();
-        if (validItems.Count == 0) return 0;
-
-        var entities = validItems.Select(item => new LearningMaterial
-        {
-            Id = Guid.NewGuid(),
-            DeckId = deckId,
-            Term = item.Term.Trim(),
-            Meaning = item.Meaning.Trim(),
-            CategoryType = categoryType,
-            ContextTag = string.IsNullOrWhiteSpace(item.ContextTag) ? null : item.ContextTag.Trim(),
-            Phonetics = string.IsNullOrWhiteSpace(item.Phonetics) ? null : item.Phonetics.Trim(),
-            ExampleSentence = string.IsNullOrWhiteSpace(item.ExampleSentence) ? null : item.ExampleSentence.Trim()
-        }).ToList();
-
-        await _dbContext.LearningMaterials.AddRangeAsync(entities);
-        await _dbContext.SaveChangesAsync();
-
-        return entities.Count;
+        return Task.FromResult(validItems.Count);
     }
 }

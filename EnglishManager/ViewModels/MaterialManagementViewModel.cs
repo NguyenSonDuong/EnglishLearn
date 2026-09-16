@@ -3,17 +3,51 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using English.Entity.DTOs;
 using English.Entity.Enums;
-using English.Entity.Services;
 using EnglishManager.Services;
 
 namespace EnglishManager.ViewModels;
 
 public partial class MaterialManagementViewModel : ObservableObject
 {
-    private readonly ILearningMaterialService _materialService;
-    private readonly IDeckService _deckService;
     private readonly IInAppDialogService _dialogService;
     private readonly IExcelImportService _excelImportService;
+
+    public static readonly List<LearningMaterialDto> MockMaterials = new()
+    {
+        new LearningMaterialDto
+        {
+            Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+            DeckId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Term = "Abandon",
+            Meaning = "Từ bỏ, ruồng bỏ",
+            CategoryType = CategoryType.Vocab,
+            Phonetics = "/əˈbændən/",
+            ExampleSentence = "He decided to abandon his car and walk in the blizzard.",
+            QuestionCount = 1
+        },
+        new LearningMaterialDto
+        {
+            Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+            DeckId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
+            Term = "Brilliant",
+            Meaning = "Xuất sắc, rực rỡ",
+            CategoryType = CategoryType.Vocab,
+            Phonetics = "/ˈbrɪljənt/",
+            ExampleSentence = "She had a brilliant idea.",
+            QuestionCount = 1
+        },
+        new LearningMaterialDto
+        {
+            Id = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            DeckId = Guid.Parse("22222222-2222-2222-2222-222222222222"),
+            Term = "Coherent",
+            Meaning = "Mạch lạc, chặt chẽ",
+            CategoryType = CategoryType.Vocab,
+            Phonetics = "/koʊˈhɪrənt/",
+            ExampleSentence = "They failed to provide a coherent explanation.",
+            QuestionCount = 1
+        }
+    };
 
     [ObservableProperty]
     private ObservableCollection<DeckDto> _decks = new();
@@ -102,13 +136,9 @@ public partial class MaterialManagementViewModel : ObservableObject
     private string _formTitle = "Thêm từ mới / tài liệu";
 
     public MaterialManagementViewModel(
-        ILearningMaterialService materialService,
-        IDeckService deckService,
         IInAppDialogService dialogService,
         IExcelImportService excelImportService)
     {
-        _materialService = materialService;
-        _deckService = deckService;
         _dialogService = dialogService;
         _excelImportService = excelImportService;
     }
@@ -142,8 +172,15 @@ public partial class MaterialManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            var decksList = await _deckService.GetAllDecksAsync();
-            Decks = new ObservableCollection<DeckDto>(decksList);
+            await Task.Yield();
+            Decks = new ObservableCollection<DeckDto>(DeckManagementViewModel.MockDecks.Select(d => new DeckDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Description = d.Description,
+                IsActive = d.IsActive,
+                MaterialCount = d.MaterialCount
+            }));
 
             await LoadMaterialsForFilterAsync();
         }
@@ -162,23 +199,23 @@ public partial class MaterialManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            var list = new List<LearningMaterialDto>();
+            await Task.Yield();
+            var list = FilterDeck != null
+                ? MockMaterials.Where(m => m.DeckId == FilterDeck.Id).ToList()
+                : MockMaterials.ToList();
 
-            if (FilterDeck != null)
+            AllMaterials = new ObservableCollection<LearningMaterialDto>(list.Select(m => new LearningMaterialDto
             {
-                list = await _materialService.GetByDeckIdAsync(FilterDeck.Id);
-            }
-            else
-            {
-                // Lấy từ tất cả các decks
-                foreach (var deck in Decks)
-                {
-                    var items = await _materialService.GetByDeckIdAsync(deck.Id);
-                    list.AddRange(items);
-                }
-            }
-
-            AllMaterials = new ObservableCollection<LearningMaterialDto>(list);
+                Id = m.Id,
+                DeckId = m.DeckId,
+                Term = m.Term,
+                Meaning = m.Meaning,
+                CategoryType = m.CategoryType,
+                ContextTag = m.ContextTag,
+                Phonetics = m.Phonetics,
+                ExampleSentence = m.ExampleSentence,
+                QuestionCount = m.QuestionCount
+            }));
             ApplyFilter();
 
             if (SelectedMaterial != null)
@@ -285,36 +322,38 @@ public partial class MaterialManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
+            await Task.Yield();
             if (EditingMaterialId == null)
             {
                 var dto = new LearningMaterialDto
                 {
+                    Id = Guid.NewGuid(),
                     DeckId = FormDeckId,
                     Term = FormTerm.Trim(),
                     Meaning = FormMeaning.Trim(),
                     CategoryType = FormCategoryType,
                     ContextTag = string.IsNullOrWhiteSpace(FormContextTag) ? null : FormContextTag.Trim(),
                     Phonetics = string.IsNullOrWhiteSpace(FormPhonetics) ? null : FormPhonetics.Trim(),
-                    ExampleSentence = string.IsNullOrWhiteSpace(FormExampleSentence) ? null : FormExampleSentence.Trim()
+                    ExampleSentence = string.IsNullOrWhiteSpace(FormExampleSentence) ? null : FormExampleSentence.Trim(),
+                    QuestionCount = 0
                 };
-                var created = await _materialService.CreateAsync(dto);
-                await _dialogService.ShowSuccessAsync("Thành công", $"Đã thêm từ mới '{created.Term}'.");
+                MockMaterials.Add(dto);
+                await _dialogService.ShowSuccessAsync("Thành công", $"Đã thêm từ mới '{dto.Term}'.");
             }
             else
             {
-                var dto = new LearningMaterialDto
+                var existing = MockMaterials.FirstOrDefault(m => m.Id == EditingMaterialId.Value);
+                if (existing != null)
                 {
-                    Id = EditingMaterialId.Value,
-                    DeckId = FormDeckId,
-                    Term = FormTerm.Trim(),
-                    Meaning = FormMeaning.Trim(),
-                    CategoryType = FormCategoryType,
-                    ContextTag = string.IsNullOrWhiteSpace(FormContextTag) ? null : FormContextTag.Trim(),
-                    Phonetics = string.IsNullOrWhiteSpace(FormPhonetics) ? null : FormPhonetics.Trim(),
-                    ExampleSentence = string.IsNullOrWhiteSpace(FormExampleSentence) ? null : FormExampleSentence.Trim()
-                };
-                await _materialService.UpdateAsync(dto);
-                await _dialogService.ShowSuccessAsync("Thành công", $"Đã cập nhật từ vựng '{dto.Term}'.");
+                    existing.DeckId = FormDeckId;
+                    existing.Term = FormTerm.Trim();
+                    existing.Meaning = FormMeaning.Trim();
+                    existing.CategoryType = FormCategoryType;
+                    existing.ContextTag = string.IsNullOrWhiteSpace(FormContextTag) ? null : FormContextTag.Trim();
+                    existing.Phonetics = string.IsNullOrWhiteSpace(FormPhonetics) ? null : FormPhonetics.Trim();
+                    existing.ExampleSentence = string.IsNullOrWhiteSpace(FormExampleSentence) ? null : FormExampleSentence.Trim();
+                }
+                await _dialogService.ShowSuccessAsync("Thành công", $"Đã cập nhật từ vựng '{FormTerm.Trim()}'.");
             }
 
             IsEditing = false;
@@ -355,7 +394,8 @@ public partial class MaterialManagementViewModel : ObservableObject
         try
         {
             IsLoading = true;
-            await _materialService.DeleteAsync(item.Id);
+            await Task.Yield();
+            MockMaterials.RemoveAll(m => m.Id == item.Id);
             await _dialogService.ShowSuccessAsync("Đã xóa", $"Từ vựng '{item.Term}' đã được xóa thành công.");
             await LoadMaterialsForFilterAsync();
         }
@@ -497,12 +537,24 @@ public partial class MaterialManagementViewModel : ObservableObject
                 SelectedImportDeckId,
                 SelectedImportCategoryType);
 
+            foreach (var preview in ImportPreviewItems.Where(p => p.IsValid))
+            {
+                MockMaterials.Add(new LearningMaterialDto
+                {
+                    Id = Guid.NewGuid(),
+                    DeckId = SelectedImportDeckId,
+                    Term = preview.Term.Trim(),
+                    Meaning = preview.Meaning.Trim(),
+                    CategoryType = SelectedImportCategoryType,
+                    ContextTag = preview.ContextTag,
+                    Phonetics = preview.Phonetics,
+                    ExampleSentence = preview.ExampleSentence,
+                    QuestionCount = 0
+                });
+            }
+
             IsImportModalOpen = false;
             await LoadMaterialsForFilterAsync();
-
-            // Cập nhật lại danh sách decks để đồng bộ số lượng từ
-            var updatedDecks = await _deckService.GetAllDecksAsync();
-            Decks = new ObservableCollection<DeckDto>(updatedDecks);
 
             await _dialogService.ShowSuccessAsync(
                 "Nhập dữ liệu thành công",

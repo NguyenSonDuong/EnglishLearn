@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using English.Entity.DTOs;
 using English.Entity.Services;
@@ -13,7 +13,6 @@ public partial class QuizViewModel : PageViewModelBase
 {
     // ──────────────────────────── Dependencies ──────────────────────────────
 
-    private readonly IQuestionService _questionService;
     private readonly ISystemControlService _systemControlService;
     private readonly IWindowManagerService _windowManagerService;
     private readonly IShellManagementService _shellManagementService;
@@ -57,13 +56,11 @@ public partial class QuizViewModel : PageViewModelBase
     // ──────────────────────────── Constructor ───────────────────────────────
 
     public QuizViewModel(
-        IQuestionService questionService,
         ISystemControlService systemControlService,
         IWindowManagerService windowManagerService,
         IShellManagementService shellManagementService,
         INavigatorService navigator)
     {
-        _questionService = questionService;
         _systemControlService = systemControlService;
         _windowManagerService = windowManagerService;
         _shellManagementService = shellManagementService;
@@ -73,25 +70,42 @@ public partial class QuizViewModel : PageViewModelBase
         _currentIndex = 0;
         _cheatAttempts = 0;
 
-        // Tải câu hỏi bất đồng bộ khi khởi tạo
+        // Tải câu hỏi mock bất đồng bộ khi khởi tạo
         _ = LoadQuestionsAsync();
     }
 
     // ──────────────────────────── Async Init ─────────────────────────────────
 
-    /// <summary>Tải danh sách câu hỏi từ database.</summary>
+    /// <summary>Tải danh sách câu hỏi mock tạm thời (sẵn sàng chờ DB mới).</summary>
     public async Task LoadQuestionsAsync()
     {
-        try
+        await Task.Yield();
+        _questions = new List<QuestionDto>
         {
-            _questions = await _questionService.GetRandomQuestionsAsync(3);
-            _currentIndex = 0;
-            LoadCurrentQuestion();
-        }
-        catch
-        {
-            FeedbackMessage = "⚠ Không thể tải câu hỏi từ cơ sở dữ liệu.";
-        }
+            new QuestionDto
+            {
+                Id = Guid.NewGuid(),
+                Prompt = "What is the capital city of France?",
+                CorrectAnswer = "Paris",
+                Options = new List<string> { "London", "Paris", "Berlin", "Madrid" }
+            },
+            new QuestionDto
+            {
+                Id = Guid.NewGuid(),
+                Prompt = "Choose the synonym of 'Rapid':",
+                CorrectAnswer = "Fast",
+                Options = new List<string> { "Slow", "Fast", "Heavy", "Dark" }
+            },
+            new QuestionDto
+            {
+                Id = Guid.NewGuid(),
+                Prompt = "Which word means 'ngôi nhà' in English?",
+                CorrectAnswer = "House",
+                Options = new List<string> { "House", "Car", "School", "Book" }
+            }
+        };
+        _currentIndex = 0;
+        LoadCurrentQuestion();
     }
 
     // ──────────────────────────── Commands ──────────────────────────────────

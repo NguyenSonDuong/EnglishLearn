@@ -1,4 +1,4 @@
-﻿<Window x:Class="EnglishLocker.Views.MainWindow"
+<Window x:Class="EnglishLocker.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:English.ViewModel.ViewModels;assembly=English.ViewModel"
@@ -25,6 +25,9 @@
         <!-- ── DataTemplate mapping cho các Page UserControl ── -->
         <DataTemplate DataType="{x:Type vm:QuizViewModel}">
             <views:QuizControl/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LearnWordViewModel}">
+            <views:LearnWordControl/>
         </DataTemplate>
 
         <!-- ── DataTemplate mapping cho Navigator dialogs & screens ── -->
