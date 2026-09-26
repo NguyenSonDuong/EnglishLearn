@@ -11,14 +11,14 @@ public class UnitOfWork : IUnitOfWork
 {
     private readonly AppDbContext _dbContext;
 
-    public IRepository<Vocabulary> Vocabularies { get; }
+    public IVocabularyRepository Vocabularies { get; }
     public IRepository<VocabularyMeaning> Meanings { get; }
     public IRepository<MeaningExample> Examples { get; }
 
     public UnitOfWork(AppDbContext dbContext)
     {
         _dbContext = dbContext;
-        Vocabularies = new Repository<Vocabulary>(_dbContext);
+        Vocabularies = new VocabularyRepository(_dbContext);
         Meanings = new Repository<VocabularyMeaning>(_dbContext);
         Examples = new Repository<MeaningExample>(_dbContext);
     }

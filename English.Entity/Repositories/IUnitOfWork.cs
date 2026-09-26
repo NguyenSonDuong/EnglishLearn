@@ -7,7 +7,7 @@ namespace English.Entity.Repositories;
 /// </summary>
 public interface IUnitOfWork : IDisposable
 {
-    IRepository<Vocabulary> Vocabularies { get; }
+    IVocabularyRepository Vocabularies { get; }
     IRepository<VocabularyMeaning> Meanings { get; }
     IRepository<MeaningExample> Examples { get; }
 

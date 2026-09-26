@@ -7,17 +7,21 @@
              xmlns:conv="clr-namespace:EnglishLocker.Converters"
              d:DataContext="{d:DesignInstance Type=vm:LearnWordViewModel}"
              mc:Ignorable="d" 
-             d:DesignHeight="750" d:DesignWidth="1050">
+             d:DesignHeight="800" d:DesignWidth="1200"
+             FontFamily="Segoe UI">
 
     <UserControl.Resources>
-        <!-- Converter hiển thị ẩn/hiện từ mẫu theo cờ IsWordVisible -->
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
+        <conv:StringToSolidBrushConverter x:Key="StringToBrushConverter"/>
+        <conv:WordClassToStringConverter x:Key="WordClassToStrConverter"/>
+        <conv:ContextTagToStringConverter x:Key="ContextTagToStrConverter"/>
 
-        <!-- ── Style cho Button Xác nhận ── -->
+        <!-- Style nút Submit -->
         <Style x:Key="SubmitActionButton" TargetType="Button">
             <Setter Property="Background" Value="#6C63FF"/>
             <Setter Property="Foreground" Value="White"/>
-            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontSize" Value="16"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="32,12"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -44,7 +48,39 @@
             </Setter>
         </Style>
 
-        <!-- ── Style cho ProgressBar tiến trình gõ ── -->
+        <!-- Style nút Outline (Đổi Cấp Độ) -->
+        <Style x:Key="OutlineButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#8E85FF"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,7"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderBrush" Value="#4A4688"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bg" Property="Background" Value="#23233C"/>
+                                <Setter TargetName="bg" Property="BorderBrush" Value="#6C63FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Style ProgressBar tiến trình gõ -->
         <Style x:Key="AttemptProgressBarStyle" TargetType="ProgressBar">
             <Setter Property="Height" Value="10"/>
             <Setter Property="Background" Value="#2D2D4D"/>
@@ -69,146 +105,337 @@
         </Style>
     </UserControl.Resources>
 
-    <!-- Khung chính căn giữa màn hình với hiệu ứng đổ bóng -->
-    <Grid Margin="24">
+    <Grid Margin="20">
         <Border Background="#1C1C30"
                 CornerRadius="24"
-                Padding="28"
-                MaxWidth="1080"
-                MaxHeight="720"
-                VerticalAlignment="Center"
-                HorizontalAlignment="Center">
+                Padding="22"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch">
             <Border.Effect>
                 <DropShadowEffect Color="#000000" BlurRadius="45" Opacity="0.4" ShadowDepth="6"/>
             </Border.Effect>
 
-            <!-- Bố cục 2 cột phân tách rõ ràng (55% cho Information, 45% cho Practice) -->
+            <!-- Layout 2 cột: Information (60%) | Practice (40%) -->
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.2*"/>
+                    <ColumnDefinition Width="1.4*"/>
                     <ColumnDefinition Width="1.0*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- ═══════════════════════════════════════════════════════════════
-                     CỘT TRÁI: INFORMATION PANEL (THÔNG TIN TỪ VỰNG, NGHĨA & VÍ DỤ)
+                     CỘT TRÁI: INFORMATION PANEL — Toàn bộ VocabularyDto
                      ═══════════════════════════════════════════════════════════════ -->
                 <Border Grid.Column="0"
                         Background="#23233C"
                         CornerRadius="18"
-                        Padding="32,28"
-                        Margin="0,0,14,0">
+                        Margin="0,0,12,0">
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                  HorizontalScrollBarVisibility="Disabled">
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="28,24">
                         <StackPanel>
-                            <!-- Badge danh mục / Tiêu đề nhỏ -->
-                            <Border Background="#302E5C"
-                                    CornerRadius="6"
-                                    Padding="10,4"
-                                    HorizontalAlignment="Left"
-                                    Margin="0,0,0,14">
-                                <TextBlock Text="📖 TỪ VỰNG CẦN HỌC"
-                                           Foreground="#8E85FF"
-                                           FontSize="12"
-                                           FontWeight="Bold"/>
-                            </Border>
 
-                            <!-- Typography lớn cho WordText và Phonetic -->
+                            <!-- Hàng tiêu đề: Badge cấp độ + Nút Đổi Cấp Độ -->
+                            <Grid Margin="0,0,0,14">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="📖 TỪ VỰNG"
+                                               Foreground="#8E85FF"
+                                               FontSize="12"
+                                               FontWeight="Bold"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0"/>
+                                    <!-- Badge cấp độ CEFR (màu động theo LevelBadgeColor) -->
+                                    <Border CornerRadius="6"
+                                            Padding="10,3"
+                                            Background="{Binding LevelBadgeColor, Converter={StaticResource StringToBrushConverter}}">
+                                        <TextBlock Text="{Binding Level}"
+                                                   Foreground="White"
+                                                   FontSize="12"
+                                                   FontWeight="Bold"/>
+                                    </Border>
+                                </StackPanel>
+
+                                <!-- Nút Đổi Cấp Độ - góc phải -->
+                                <Button Content="🎯 Đổi Cấp Độ"
+                                        Style="{StaticResource OutlineButton}"
+                                        Command="{Binding OpenSelectLevelCommand}"
+                                        HorizontalAlignment="Right"/>
+                            </Grid>
+
+                            <!-- WordText Typography lớn -->
                             <TextBlock Text="{Binding WordText}"
                                        Foreground="#FFFFFF"
-                                       FontSize="40"
+                                       FontSize="42"
                                        FontWeight="ExtraBold"
                                        TextWrapping="Wrap"
-                                       Margin="0,0,0,4"/>
+                                       Margin="0,0,0,6"/>
 
-                            <TextBlock Text="{Binding Phonetic}"
-                                       Foreground="#A5A5C7"
-                                       FontSize="19"
-                                       FontStyle="Italic"
-                                       Margin="0,0,0,20"/>
+                            <!-- Phonetic UK + US -->
+                            <StackPanel Margin="0,0,0,16">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                                    <TextBlock Text="🇬🇧 "
+                                               FontSize="14"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PhoneticUK}"
+                                               Foreground="#A5A5C7"
+                                               FontSize="17"
+                                               FontStyle="Italic"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🇺🇸 "
+                                               FontSize="14"
+                                               VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PhoneticUS}"
+                                               Foreground="#A5A5C7"
+                                               FontSize="17"
+                                               FontStyle="Italic"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
 
-                            <!-- Đường phân cách ngang nhẹ -->
-                            <Border Height="1"
-                                    Background="#363657"
-                                    Margin="0,0,0,20"/>
+                            <!-- Mô tả ý nghĩa chung (Description) -->
+                            <Border Background="#1A1A2E"
+                                    BorderBrush="#3D3B66"
+                                    BorderThickness="1"
+                                    CornerRadius="10"
+                                    Padding="14,10"
+                                    Margin="0,0,0,16"
+                                    Visibility="{Binding Description, Converter={StaticResource StringNotEmptyToVisConverter}}">
+                                <StackPanel>
+                                    <TextBlock Text="💡 Ý NGHĨA CHUNG"
+                                               Foreground="#8E85FF"
+                                               FontSize="11"
+                                               FontWeight="Bold"
+                                               Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding Description}"
+                                               Foreground="#E2E0FF"
+                                               FontSize="13.5"
+                                               FontStyle="Italic"
+                                               TextWrapping="Wrap"
+                                               LineHeight="20"/>
+                                </StackPanel>
+                            </Border>
 
-                            <!-- Tiêu đề phần giải nghĩa -->
-                            <TextBlock Text="Định nghĩa &amp; Ví dụ minh họa:"
+                            <!-- ── Word Family Tags ── -->
+                            <StackPanel Margin="0,0,0,18">
+                                <TextBlock Text="Họ hàng từ (Word Family)"
+                                           Foreground="#8E85FF"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,8"/>
+                                <!-- WrapPanel chứa các tag từ họ hàng -->
+                                <ItemsControl ItemsSource="{Binding WordFamily}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#1D2B4A"
+                                                    BorderBrush="#6C63FF"
+                                                    BorderThickness="1"
+                                                    CornerRadius="20"
+                                                    Padding="12,5"
+                                                    Margin="0,0,6,6">
+                                                <TextBlock Text="{Binding}"
+                                                           Foreground="#A5BFFF"
+                                                           FontSize="13"
+                                                           FontStyle="Italic"/>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+
+                            <Border Height="1" Background="#363657" Margin="0,0,0,18"/>
+
+                            <!-- ── Meanings (VocabularyMeaningDto) ── -->
+                            <TextBlock Text="Định nghĩa &amp; Nghĩa:"
                                        Foreground="#8E85FF"
-                                       FontSize="14"
+                                       FontSize="13"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,12"/>
 
-                            <!-- ItemsControl danh sách các nghĩa (Meanings) -->
                             <ItemsControl ItemsSource="{Binding Meanings}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Background="#2B2B48"
-                                                CornerRadius="12"
-                                                Padding="18,14"
-                                                Margin="0,0,0,14">
+                                                CornerRadius="14"
+                                                Padding="18,16"
+                                                Margin="0,0,0,16">
                                             <StackPanel>
-                                                <!-- Từ loại (WordClass badge) -->
-                                                <Border Background="#3A386D"
-                                                        CornerRadius="6"
-                                                        Padding="8,3"
-                                                        HorizontalAlignment="Left"
-                                                        Margin="0,0,0,8">
-                                                    <TextBlock Text="{Binding WordClass}"
-                                                               Foreground="#00E5FF"
-                                                               FontSize="12"
-                                                               FontWeight="Bold"/>
-                                                </Border>
 
-                                                <!-- Nghĩa tiếng Việt -->
-                                                <TextBlock Text="{Binding DefinitionVI}"
+                                                <!-- Hàng badge: WordClass + ContextTag -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                    <Border Background="#3A386D"
+                                                            CornerRadius="6"
+                                                            Padding="10,4"
+                                                            Margin="0,0,8,0">
+                                                        <TextBlock Text="{Binding WordClass, Converter={StaticResource WordClassToStrConverter}}"
+                                                                   Foreground="#00E5FF"
+                                                                   FontSize="12"
+                                                                   FontWeight="Bold"/>
+                                                    </Border>
+                                                    <Border Background="#1D3A2B"
+                                                            CornerRadius="6"
+                                                            Padding="8,4">
+                                                        <TextBlock Text="{Binding Context, Converter={StaticResource ContextTagToStrConverter}}"
+                                                                   Foreground="#34D399"
+                                                                   FontSize="11"
+                                                                   FontWeight="SemiBold"/>
+                                                    </Border>
+                                                </StackPanel>
+
+                                                <!-- Definition EN (in nghiêng) -->
+                                                <TextBlock Text="{Binding Definition_EN}"
+                                                           Foreground="#B0B0D8"
+                                                           FontSize="14"
+                                                           FontStyle="Italic"
+                                                           TextWrapping="Wrap"
+                                                           Margin="0,0,0,4"/>
+
+                                                <!-- Definition VI (đậm, trắng) -->
+                                                <TextBlock Text="{Binding Definition_VI}"
                                                            Foreground="#EEEEEE"
                                                            FontSize="15"
                                                            FontWeight="SemiBold"
                                                            TextWrapping="Wrap"
                                                            LineHeight="22"
-                                                           Margin="0,0,0,10"/>
+                                                           Margin="0,0,0,14"/>
 
-                                                <!-- Nested ItemsControl: Danh sách ví dụ minh họa -->
-                                                <ItemsControl ItemsSource="{Binding Examples}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid Margin="0,3,0,3">
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="Auto"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                </Grid.ColumnDefinitions>
-                                                                <TextBlock Grid.Column="0"
-                                                                           Text="• "
-                                                                           Foreground="#7A7A9E"
-                                                                           FontSize="14"/>
-                                                                <TextBlock Grid.Column="1"
-                                                                           Text="{Binding}"
-                                                                           Foreground="#B8B8D4"
-                                                                           FontSize="13.5"
-                                                                           FontStyle="Italic"
-                                                                           TextWrapping="Wrap"
-                                                                           LineHeight="19"/>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
+                                                <!-- ── Synonyms Tags (màu xanh lá) ── -->
+                                                <StackPanel Margin="0,0,0,10">
+                                                    <TextBlock Text="✅ Từ đồng nghĩa"
+                                                               Foreground="#6B7280"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Margin="0,0,0,6"/>
+                                                    <ItemsControl ItemsSource="{Binding Synonyms}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <WrapPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#14532D"
+                                                                        BorderBrush="#16A34A"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="16"
+                                                                        Padding="10,4"
+                                                                        Margin="0,0,6,6">
+                                                                    <TextBlock Text="{Binding}"
+                                                                               Foreground="#86EFAC"
+                                                                               FontSize="12.5"/>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+
+                                                <!-- ── Antonyms Tags (màu đỏ) ── -->
+                                                <StackPanel Margin="0,0,0,14">
+                                                    <TextBlock Text="❌ Từ trái nghĩa"
+                                                               Foreground="#6B7280"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Margin="0,0,0,6"/>
+                                                    <ItemsControl ItemsSource="{Binding Antonyms}">
+                                                        <ItemsControl.ItemsPanel>
+                                                            <ItemsPanelTemplate>
+                                                                <WrapPanel Orientation="Horizontal"/>
+                                                            </ItemsPanelTemplate>
+                                                        </ItemsControl.ItemsPanel>
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#450A0A"
+                                                                        BorderBrush="#DC2626"
+                                                                        BorderThickness="1"
+                                                                        CornerRadius="16"
+                                                                        Padding="10,4"
+                                                                        Margin="0,0,6,6">
+                                                                    <TextBlock Text="{Binding}"
+                                                                               Foreground="#FCA5A5"
+                                                                               FontSize="12.5"/>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
+
+                                                <!-- ── Examples (MeaningExampleDto) ── -->
+                                                <StackPanel>
+                                                    <TextBlock Text="💬 Câu ví dụ"
+                                                               Foreground="#6B7280"
+                                                               FontSize="11"
+                                                               FontWeight="SemiBold"
+                                                               Margin="0,0,0,8"/>
+                                                    <ItemsControl ItemsSource="{Binding Examples}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Background="#1E1E38"
+                                                                        CornerRadius="10"
+                                                                        Padding="14,10"
+                                                                        Margin="0,0,0,8">
+                                                                    <StackPanel>
+                                                                        <!-- Câu Tiếng Anh với từ được highlight -->
+                                                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                                                            <TextBlock Text="❝ "
+                                                                                       Foreground="#6C63FF"
+                                                                                       FontSize="16"
+                                                                                       VerticalAlignment="Center"/>
+                                                                            <TextBlock Text="{Binding Sentence_EN}"
+                                                                                       Foreground="#D4D4F8"
+                                                                                       FontSize="13.5"
+                                                                                       FontStyle="Italic"
+                                                                                       TextWrapping="Wrap"
+                                                                                       VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                        <!-- HighlightedTarget badge -->
+                                                                        <Border Background="#2D2B5C"
+                                                                                CornerRadius="5"
+                                                                                Padding="8,3"
+                                                                                HorizontalAlignment="Left"
+                                                                                Margin="20,0,0,4"
+                                                                                Visibility="{Binding HighlightedTarget,
+                                                                                             Converter={StaticResource ResourceKey=StringNotEmptyToVisConverter}}">
+                                                                            <TextBlock Text="{Binding HighlightedTarget}"
+                                                                                       Foreground="#FACC15"
+                                                                                       FontSize="12"
+                                                                                       FontWeight="Bold"/>
+                                                                        </Border>
+                                                                        <!-- Dịch Tiếng Việt -->
+                                                                        <TextBlock Text="{Binding Sentence_VI}"
+                                                                                   Foreground="#8888AA"
+                                                                                   FontSize="12.5"
+                                                                                   FontStyle="Italic"
+                                                                                   TextWrapping="Wrap"
+                                                                                   Margin="20,0,0,0"/>
+                                                                    </StackPanel>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
                                             </StackPanel>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
 
                 <!-- ═══════════════════════════════════════════════════════════════
-                     CỘT PHẢI: ACTION PANEL (KHU VỰC LUYỆN GÕ LẶP LẠI & TIẾN TRÌNH)
+                     CỘT PHẢI: ACTION PANEL — Luyện gõ từ
                      ═══════════════════════════════════════════════════════════════ -->
                 <Border Grid.Column="1"
                         Background="#23233C"
                         CornerRadius="18"
-                        Padding="32,28"
-                        Margin="14,0,0,0">
+                        Padding="28,24"
+                        Margin="12,0,0,0">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -216,7 +443,7 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Header Tiến trình gõ từ -->
+                        <!-- Progress header -->
                         <StackPanel Grid.Row="0" Margin="0,0,0,18">
                             <Grid Margin="0,0,0,8">
                                 <TextBlock Text="Tiến độ luyện gõ"
@@ -232,44 +459,41 @@
                                     <Run Text="{Binding TargetAttempts, Mode=OneWay}" Foreground="#8888AA"/>
                                 </TextBlock>
                             </Grid>
-
-                            <!-- Thanh tiến trình ProgressBar -->
                             <ProgressBar Style="{StaticResource AttemptProgressBarStyle}"
                                          Minimum="0"
                                          Maximum="{Binding TargetAttempts}"
                                          Value="{Binding CurrentAttempt, Mode=OneWay}"/>
                         </StackPanel>
 
-                        <!-- Thân khu vực gõ: Hiển thị từ mẫu và TextBox nhập liệu -->
+                        <!-- Khu vực gõ từ -->
                         <StackPanel Grid.Row="1"
                                     VerticalAlignment="Center"
                                     Margin="0,10,0,10">
 
-                            <!-- Từ gốc kích thước rất lớn (có thể ẩn/hiện thông qua cờ IsWordVisible) -->
-                            <Border MinHeight="80"
-                                    Margin="0,0,0,24"
-                                    VerticalAlignment="Center">
+                            <!-- Từ mẫu cỡ lớn (ẩn/hiện qua IsWordVisible) -->
+                            <Border MinHeight="80" Margin="0,0,0,22" VerticalAlignment="Center">
                                 <TextBlock Text="{Binding WordText}"
                                            Foreground="#FFFFFF"
-                                           FontSize="46"
+                                           FontSize="50"
                                            FontWeight="Black"
                                            TextAlignment="Center"
                                            TextWrapping="Wrap"
                                            Visibility="{Binding IsWordVisible, Converter={StaticResource BoolToVisConverter}}"/>
                             </Border>
 
-                            <!-- TextBox nhập liệu lớn, căn giữa, bắt phím Enter kích hoạt SubmitCommand -->
+                            <!-- TextBox nhập liệu — bắt Enter → SubmitCommand -->
                             <Border Background="#2B2B48"
                                     BorderBrush="#6C63FF"
                                     BorderThickness="2"
                                     CornerRadius="14"
-                                    Padding="14,10">
+                                    Padding="14,10"
+                                    Margin="0,0,0,10">
                                 <TextBox Text="{Binding UserInput, UpdateSourceTrigger=PropertyChanged}"
                                          Foreground="#00FFC2"
                                          CaretBrush="#00FFC2"
                                          Background="Transparent"
                                          BorderThickness="0"
-                                         FontSize="28"
+                                         FontSize="30"
                                          FontWeight="Bold"
                                          TextAlignment="Center">
                                     <TextBox.InputBindings>
@@ -280,15 +504,14 @@
 
                             <TextBlock Text="Gõ lại từ trên và nhấn Enter để xác nhận"
                                        Foreground="#8888AA"
-                                       FontSize="12.5"
+                                       FontSize="12"
                                        HorizontalAlignment="Center"
-                                       Margin="0,12,0,0"/>
+                                       Margin="0,0,0,20"/>
 
-                            <!-- Thông báo phản hồi trạng thái (FeedbackMessage) -->
+                            <!-- Feedback -->
                             <Border Background="#1C1C30"
                                     CornerRadius="10"
-                                    Padding="14,10"
-                                    Margin="0,20,0,0">
+                                    Padding="14,10">
                                 <TextBlock Text="{Binding FeedbackMessage}"
                                            Foreground="{Binding FeedbackColor}"
                                            FontSize="13.5"
@@ -298,7 +521,7 @@
                             </Border>
                         </StackPanel>
 
-                        <!-- Footer: Nút xác nhận thủ công (dành cho chuột/cảm ứng) -->
+                        <!-- Nút Xác nhận -->
                         <Button Grid.Row="2"
                                 Content="✓  Xác nhận (Enter)"
                                 Style="{StaticResource SubmitActionButton}"

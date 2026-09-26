@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text;
 using ExcelDataReader;
+using English.Entity.Entities;
 using English.Entity.Enums;
 using English.Repository.Data;
 using EnglishManager.Models;
@@ -55,7 +56,6 @@ public class ExcelImportService : IExcelImportService
                 continue;
             }
 
-            // Ghép cột 5 và 6 thành 1 chuỗi đưa vào ExampleSentence
             string? mergedExample = null;
             if (!string.IsNullOrWhiteSpace(exEn) && !string.IsNullOrWhiteSpace(exVi))
             {
@@ -86,9 +86,55 @@ public class ExcelImportService : IExcelImportService
         return result;
     }
 
-    public Task<int> ImportToDatabaseAsync(IEnumerable<ExcelImportItem> items, Guid deckId, CategoryType categoryType)
+    public async Task<int> ImportToDatabaseAsync(IEnumerable<ExcelImportItem> items, CEFRLevel defaultLevel)
     {
         var validItems = items.Where(i => i.IsValid).ToList();
-        return Task.FromResult(validItems.Count);
+        if (validItems.Count == 0) return 0;
+
+        foreach (var item in validItems)
+        {
+            var vocabId = Guid.NewGuid();
+            var vocab = new Vocabulary
+            {
+                Id = vocabId,
+                WordText = item.Term,
+                Phonetic_UK = item.Phonetics,
+                Phonetic_US = item.Phonetics,
+                Level = defaultLevel,
+                WordFamily = new List<string>()
+            };
+
+            var meaningId = Guid.NewGuid();
+            var meaning = new VocabularyMeaning
+            {
+                Id = meaningId,
+                VocabularyId = vocabId,
+                WordClass = WordClass.Noun,
+                Definition_EN = item.Meaning,
+                Definition_VI = item.Meaning,
+                Context = ContextTag.General,
+                Synonyms = new List<string>(),
+                Antonyms = new List<string>()
+            };
+
+            if (!string.IsNullOrWhiteSpace(item.EnglishExample) || !string.IsNullOrWhiteSpace(item.VietnameseExample))
+            {
+                var example = new MeaningExample
+                {
+                    Id = Guid.NewGuid(),
+                    MeaningId = meaningId,
+                    Sentence_EN = item.EnglishExample ?? string.Empty,
+                    Sentence_VI = item.VietnameseExample ?? string.Empty,
+                    HighlightedTarget = item.Term
+                };
+                meaning.Examples.Add(example);
+            }
+
+            vocab.Meanings.Add(meaning);
+            await _dbContext.Vocabularies.AddAsync(vocab);
+        }
+
+        await _dbContext.SaveChangesAsync();
+        return validItems.Count;
     }
 }

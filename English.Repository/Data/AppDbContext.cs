@@ -26,7 +26,7 @@ public class AppDbContext : DbContext
     public DbSet<VocabularyMeaning> VocabularyMeanings => Set<VocabularyMeaning>();
     public DbSet<MeaningExample> MeaningExamples => Set<MeaningExample>();
 
-    public static string CurrentDatabasePath { get; set; } = "englishlocker.db";
+    public static string CurrentDatabasePath { get; set; } = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "englishlocker.db");
 
     public AppDbContext()
     {
@@ -42,7 +42,65 @@ public class AppDbContext : DbContext
         Database.CloseConnection();
         Database.SetConnectionString($"Data Source={newDatabasePath}");
         ChangeTracker.Clear();
+        EnsureTablesCreated();
+    }
+
+    /// <summary>
+    /// Đảm bảo tất cả các bảng của Dictionary Cluster (Vocabularies, VocabularyMeanings, MeaningExamples)
+    /// luôn tồn tại, ngay cả khi kết nối tới các tệp cơ sở dữ liệu SQLite cũ được tạo từ các phiên bản trước.
+    /// </summary>
+    public void EnsureTablesCreated()
+    {
         Database.EnsureCreated();
+
+        const string sql = @"
+CREATE TABLE IF NOT EXISTS ""Vocabularies"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_Vocabularies"" PRIMARY KEY,
+    ""WordText"" TEXT NOT NULL,
+    ""Description"" TEXT NULL,
+    ""Phonetic_UK"" TEXT NULL,
+    ""Phonetic_US"" TEXT NULL,
+    ""AudioPath_UK"" TEXT NULL,
+    ""AudioPath_US"" TEXT NULL,
+    ""WordFamily"" TEXT NOT NULL,
+    ""Level"" INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ""VocabularyMeanings"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_VocabularyMeanings"" PRIMARY KEY,
+    ""VocabularyId"" TEXT NOT NULL,
+    ""WordClass"" INTEGER NOT NULL,
+    ""Definition_EN"" TEXT NOT NULL,
+    ""Definition_VI"" TEXT NOT NULL,
+    ""Context"" INTEGER NOT NULL,
+    ""Synonyms"" TEXT NOT NULL,
+    ""Antonyms"" TEXT NOT NULL,
+    CONSTRAINT ""FK_VocabularyMeanings_Vocabularies_VocabularyId"" FOREIGN KEY (""VocabularyId"") REFERENCES ""Vocabularies"" (""Id"") ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ""MeaningExamples"" (
+    ""Id"" TEXT NOT NULL CONSTRAINT ""PK_MeaningExamples"" PRIMARY KEY,
+    ""MeaningId"" TEXT NOT NULL,
+    ""Sentence_EN"" TEXT NOT NULL,
+    ""Sentence_VI"" TEXT NOT NULL,
+    ""HighlightedTarget"" TEXT NULL,
+    CONSTRAINT ""FK_MeaningExamples_VocabularyMeanings_MeaningId"" FOREIGN KEY (""MeaningId"") REFERENCES ""VocabularyMeanings"" (""Id"") ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS ""IX_VocabularyMeanings_VocabularyId"" ON ""VocabularyMeanings"" (""VocabularyId"");
+CREATE INDEX IF NOT EXISTS ""IX_MeaningExamples_MeaningId"" ON ""MeaningExamples"" (""MeaningId"");
+";
+        Database.ExecuteSqlRaw(sql);
+
+        // Đảm bảo tương thích ngược: Bổ sung cột Description nếu kết nối vào DB SQLite đã tồn tại từ trước
+        try
+        {
+            Database.ExecuteSqlRaw(@"ALTER TABLE ""Vocabularies"" ADD COLUMN ""Description"" TEXT NULL;");
+        }
+        catch
+        {
+            // Bỏ qua nếu cột Description đã tồn tại hoặc bảng vừa được khởi tạo mới
+        }
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -68,6 +126,9 @@ public class AppDbContext : DbContext
             entity.Property(e => e.WordText)
                   .IsRequired()
                   .HasMaxLength(200);
+
+            entity.Property(e => e.Description)
+                  .HasMaxLength(2000);
 
             entity.Property(e => e.Phonetic_UK)
                   .HasMaxLength(100);

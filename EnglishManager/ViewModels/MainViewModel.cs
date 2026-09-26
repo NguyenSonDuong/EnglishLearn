@@ -11,13 +11,16 @@ public partial class MainViewModel : ObservableObject
     private readonly AppDbContext _appDbContext;
 
     [ObservableProperty]
-    private DeckManagementViewModel _deckVM;
+    private VocabularyManagementViewModel _vocabVM;
 
     [ObservableProperty]
-    private MaterialManagementViewModel _materialVM;
+    private MeaningManagementViewModel _meaningVM;
 
     [ObservableProperty]
-    private QuestionManagementViewModel _questionVM;
+    private ExampleManagementViewModel _exampleVM;
+
+    [ObservableProperty]
+    private AiDictionaryViewModel _aiDictVM;
 
     [ObservableProperty]
     private InAppDialogService _dialogService;
@@ -26,13 +29,13 @@ public partial class MainViewModel : ObservableObject
     private int _selectedTabIndex = 0;
 
     [ObservableProperty]
-    private int _totalDecks;
+    private int _totalVocabularies;
 
     [ObservableProperty]
-    private int _totalMaterials;
+    private int _totalMeanings;
 
     [ObservableProperty]
-    private int _totalQuestions;
+    private int _totalExamples;
 
     [ObservableProperty]
     private string _currentDatabasePath = string.Empty;
@@ -45,15 +48,17 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel(
         AppDbContext appDbContext,
-        DeckManagementViewModel deckVM,
-        MaterialManagementViewModel materialVM,
-        QuestionManagementViewModel questionVM,
+        VocabularyManagementViewModel vocabVM,
+        MeaningManagementViewModel meaningVM,
+        ExampleManagementViewModel exampleVM,
+        AiDictionaryViewModel aiDictVM,
         InAppDialogService dialogService)
     {
         _appDbContext = appDbContext;
-        _deckVM = deckVM;
-        _materialVM = materialVM;
-        _questionVM = questionVM;
+        _vocabVM = vocabVM;
+        _meaningVM = meaningVM;
+        _exampleVM = exampleVM;
+        _aiDictVM = aiDictVM;
         _dialogService = dialogService;
 
         UpdateDatabaseInfo(AppDbContext.CurrentDatabasePath);
@@ -74,20 +79,23 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void SelectDecksTab() => SelectTab(0);
+    public void SelectVocabulariesTab() => SelectTab(0);
 
     [RelayCommand]
-    public void SelectMaterialsTab() => SelectTab(1);
+    public void SelectMeaningsTab() => SelectTab(1);
 
     [RelayCommand]
-    public void SelectQuestionsTab() => SelectTab(2);
+    public void SelectExamplesTab() => SelectTab(2);
+
+    [RelayCommand]
+    public void SelectAiDictionaryTab() => SelectTab(3);
 
     [RelayCommand]
     public async Task InitializeAsync()
     {
-        await DeckVM.LoadDecksCommand.ExecuteAsync(null);
-        await MaterialVM.LoadDataCommand.ExecuteAsync(null);
-        await QuestionVM.LoadDataCommand.ExecuteAsync(null);
+        await VocabVM.LoadDataCommand.ExecuteAsync(null);
+        await MeaningVM.LoadDataCommand.ExecuteAsync(null);
+        await ExampleVM.LoadDataCommand.ExecuteAsync(null);
         UpdateCounts();
     }
 
@@ -96,13 +104,16 @@ public partial class MainViewModel : ObservableObject
         switch (SelectedTabIndex)
         {
             case 0:
-                await DeckVM.LoadDecksCommand.ExecuteAsync(null);
+                await VocabVM.LoadDataCommand.ExecuteAsync(null);
                 break;
             case 1:
-                await MaterialVM.LoadDataCommand.ExecuteAsync(null);
+                await MeaningVM.LoadDataCommand.ExecuteAsync(null);
                 break;
             case 2:
-                await QuestionVM.LoadDataCommand.ExecuteAsync(null);
+                await ExampleVM.LoadDataCommand.ExecuteAsync(null);
+                break;
+            case 3:
+                // Tab AI Dictionary: không tự động tải dữ liệu, người dùng chủ động tra cứu
                 break;
         }
         UpdateCounts();
@@ -110,9 +121,9 @@ public partial class MainViewModel : ObservableObject
 
     private void UpdateCounts()
     {
-        TotalDecks = DeckVM.Decks.Count;
-        TotalMaterials = MaterialVM.AllMaterials.Count;
-        TotalQuestions = QuestionVM.AllQuestions.Count;
+        TotalVocabularies = VocabVM.AllVocabularies.Count;
+        TotalMeanings = MeaningVM.AllMeanings.Count;
+        TotalExamples = ExampleVM.AllExamples.Count;
     }
 
     [RelayCommand]
@@ -167,7 +178,7 @@ public partial class MainViewModel : ObservableObject
 
             await DialogService.ShowSuccessAsync(
                 "Chuyển cơ sở dữ liệu thành công",
-                $"Đang làm việc và chỉnh sửa trực tiếp trên file:\n{targetPath}\n\nĐã đồng bộ lại danh sách bộ đề, từ mới và câu hỏi.");
+                $"Đang làm việc và chỉnh sửa trực tiếp trên file:\n{targetPath}\n\nĐã đồng bộ lại danh sách từ vựng, ngữ nghĩa và ví dụ.");
         }
         catch (Exception ex)
         {

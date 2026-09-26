@@ -9,6 +9,7 @@ public class VocabularyDto
 {
     public Guid Id { get; set; }
     public string WordText { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public string? Phonetic_UK { get; set; }
     public string? Phonetic_US { get; set; }
     public string? AudioPath_UK { get; set; }

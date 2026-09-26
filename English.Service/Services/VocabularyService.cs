@@ -20,11 +20,11 @@ public class VocabularyService : IVocabularyService
     public VocabularyService(
         IUnitOfWork unitOfWork,
         IMapper mapper,
-        ILogger<VocabularyService> logger)
+        ILogger<VocabularyService>? logger = null)
     {
         _unitOfWork = unitOfWork;
         _mapper = mapper;
-        _logger = logger;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<VocabularyService>.Instance;
     }
 
     public async Task<VocabularyDto?> GetVocabularyByIdAsync(Guid id)

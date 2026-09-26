@@ -2,8 +2,11 @@ using System.Windows;
 using Application = System.Windows.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using English.Entity.Repositories;
 using English.Entity.Services;
 using English.Repository.Data;
+using English.Repository.Repositories;
+using English.Service.Mappings;
 using English.Service.Services;
 using English.ViewModel.ViewModels;
 using EnglishLocker.Views;
@@ -35,7 +38,7 @@ public partial class App : Application
         using (var scope = _serviceProvider.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            dbContext.Database.EnsureCreated();
+            dbContext.EnsureTablesCreated();
         }
 
         // 3. Đăng ký ứng dụng làm Custom Shell nếu chưa được cấu hình
@@ -52,8 +55,12 @@ public partial class App : Application
     /// </summary>
     private static void ConfigureServices(IServiceCollection services)
     {
-        // ── Database ──
+        // ── Database & Data Access ──
         services.AddDbContext<AppDbContext>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // ── AutoMapper ──
+        services.AddAutoMapper(typeof(AppMapperProfile));
 
         // ── Services (System) ──
         services.AddSingleton<ISystemControlService, SystemControlService>();
@@ -62,11 +69,16 @@ public partial class App : Application
         services.AddSingleton<IShellManagementService, ShellManagementService>();
         services.AddSingleton<INavigatorService, NavigatorService>();
 
+        // ── Services (Vocabulary & Domain) ──
+        services.AddScoped<IVocabularyService, VocabularyService>();
+        services.AddScoped<IVocabularyGeneratorService, DatabaseVocabularyService>();
+
         // ── ViewModels ──
         services.AddTransient<MainViewModel>();
         services.AddTransient<QuizViewModel>();
         services.AddTransient<StartupWarningViewModel>();
         services.AddTransient<LearnWordViewModel>();
+        services.AddTransient<SelectLevelViewModel>();
 
         // ── Views ──
         services.AddTransient<MainWindow>();
@@ -74,6 +86,7 @@ public partial class App : Application
         services.AddTransient<QuizControl>();
         services.AddTransient<StartupWarningControl>();
         services.AddTransient<LearnWordControl>();
+        services.AddTransient<SelectLevelControl>();
     }
 
     protected override void OnExit(ExitEventArgs e)

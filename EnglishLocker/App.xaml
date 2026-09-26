@@ -10,8 +10,14 @@
          ═══════════════════════════════════════════════════════════════════ -->
 
     <Application.Resources>
-        <!-- Đăng ký converter dùng chung cho toàn app -->
+        <!-- ── Converters dùng chung toàn app ── -->
         <conv:CheatCountToVisibilityConverter x:Key="CheatVisibilityConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <conv:StringToSolidBrushConverter x:Key="StringToBrushConverter"/>
+        <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
+        <conv:WordClassToStringConverter x:Key="WordClassToStrConverter"/>
+        <conv:ContextTagToStringConverter x:Key="ContextTagToStrConverter"/>
+        <conv:ObjectEqualityConverter x:Key="ObjectEqualityConverter"/>
     </Application.Resources>
 </Application>
