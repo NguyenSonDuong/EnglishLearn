@@ -5,13 +5,18 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:English.ViewModel.ViewModels;assembly=English.ViewModel"
              xmlns:conv="clr-namespace:EnglishLocker.Converters"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              d:DataContext="{d:DesignInstance Type=vm:SelectLevelViewModel}"
              mc:Ignorable="d"
              d:DesignHeight="480" d:DesignWidth="720"
              FontFamily="Segoe UI">
-
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding LoadedCommand}" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
     <UserControl.Resources>
-        <conv:StringToSolidBrushConverter x:Key="StringToBrushConverter"/>
+        <conv:CEFRToSolidBrushConverter x:Key="CEFRToBrushConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
         <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
@@ -54,7 +59,7 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="levelBorder" Property="Background" Value="#252542"/>
                                 <Setter TargetName="levelBorder" Property="BorderBrush"
-                                        Value="{Binding ColorHex, Converter={StaticResource StringToBrushConverter}}"/>
+                                        Value="{Binding Level, Converter={StaticResource StringToBrushConverter}}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="levelBorder" Property="Background" Value="#1E1E38"/>
@@ -183,7 +188,7 @@
                         <Grid>
                             <Button Style="{StaticResource LevelButtonStyle}"
                                     Command="{Binding DataContext.SelectLevelCommand,
-                                              RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                      RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"/>
 
                             <!-- Viền highlight khi là SelectedLevel -->

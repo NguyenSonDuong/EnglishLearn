@@ -75,7 +75,6 @@ public partial class App : Application
 
         // ── ViewModels ──
         services.AddTransient<MainViewModel>();
-        services.AddTransient<QuizViewModel>();
         services.AddTransient<StartupWarningViewModel>();
         services.AddTransient<LearnWordViewModel>();
         services.AddTransient<SelectLevelViewModel>();
@@ -83,7 +82,6 @@ public partial class App : Application
         // ── Views ──
         services.AddTransient<MainWindow>();
         services.AddTransient<BlackoutWindow>();
-        services.AddTransient<QuizControl>();
         services.AddTransient<StartupWarningControl>();
         services.AddTransient<LearnWordControl>();
         services.AddTransient<SelectLevelControl>();

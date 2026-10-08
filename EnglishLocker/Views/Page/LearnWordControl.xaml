@@ -3,17 +3,22 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
              xmlns:vm="clr-namespace:English.ViewModel.ViewModels;assembly=English.ViewModel"
              xmlns:conv="clr-namespace:EnglishLocker.Converters"
              d:DataContext="{d:DesignInstance Type=vm:LearnWordViewModel}"
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="1200"
              FontFamily="Segoe UI">
-
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding LoadedCommand}" />
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
     <UserControl.Resources>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
         <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
-        <conv:StringToSolidBrushConverter x:Key="StringToBrushConverter"/>
+        <conv:CEFRToSolidBrushConverter x:Key="CEFRToBrushConverter"/>
         <conv:WordClassToStringConverter x:Key="WordClassToStrConverter"/>
         <conv:ContextTagToStringConverter x:Key="ContextTagToStrConverter"/>
 
@@ -128,6 +133,23 @@
                 <Border Grid.Column="0"
                         Background="#23233C"
                         CornerRadius="18"
+                         Visibility="{Binding IsWordVisible, Converter={StaticResource BoolToVisConverter}, ConverterParameter=Inverse}"
+                        Margin="0,0,12,0">
+
+                    <!-- WordText Typography lớn -->
+                    <TextBlock Text="Hãy tiếp tục bài học ..."
+                                       Foreground="#34FFFFFF"
+                                       FontSize="42"
+                                       FontWeight="ExtraBold"
+                                       TextWrapping="Wrap"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                                       Margin="0,0,0,6"/>
+                </Border>
+                <Border Grid.Column="0"
+                        Background="#23233C"
+                        CornerRadius="18"
+                         Visibility="{Binding IsWordVisible, Converter={StaticResource BoolToVisConverter}}"
                         Margin="0,0,12,0">
                     <ScrollViewer VerticalScrollBarVisibility="Auto"
                                   HorizontalScrollBarVisibility="Disabled"
@@ -146,7 +168,7 @@
                                     <!-- Badge cấp độ CEFR (màu động theo LevelBadgeColor) -->
                                     <Border CornerRadius="6"
                                             Padding="10,3"
-                                            Background="{Binding LevelBadgeColor, Converter={StaticResource StringToBrushConverter}}">
+                                            Background="{Binding Level, Converter={StaticResource CEFRToBrushConverter}}">
                                         <TextBlock Text="{Binding Level}"
                                                    Foreground="White"
                                                    FontSize="12"
@@ -427,7 +449,7 @@
                         </StackPanel>
                     </ScrollViewer>
                 </Border>
-
+                
                 <!-- ═══════════════════════════════════════════════════════════════
                      CỘT PHẢI: ACTION PANEL — Luyện gõ từ
                      ═══════════════════════════════════════════════════════════════ -->

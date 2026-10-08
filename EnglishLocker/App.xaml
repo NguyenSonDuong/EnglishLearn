@@ -13,7 +13,7 @@
         <!-- ── Converters dùng chung toàn app ── -->
         <conv:CheatCountToVisibilityConverter x:Key="CheatVisibilityConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
-        <conv:StringToSolidBrushConverter x:Key="StringToBrushConverter"/>
+        <conv:CEFRToSolidBrushConverter x:Key="CEFRToBrushConverter"/>
         <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
         <conv:WordClassToStringConverter x:Key="WordClassToStrConverter"/>

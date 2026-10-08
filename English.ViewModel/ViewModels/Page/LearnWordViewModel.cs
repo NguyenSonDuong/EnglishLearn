@@ -49,9 +49,6 @@ public partial class LearnWordViewModel : PageViewModelBase
     [ObservableProperty]
     private CEFRLevel _level = CEFRLevel.Uncategorized;
 
-    /// <summary>Màu hex của badge cấp độ CEFR.</summary>
-    [ObservableProperty]
-    private string _levelBadgeColor = "#6C63FF";
 
     /// <summary>Danh sách các nghĩa đầy đủ (VocabularyMeaningDto).</summary>
     [ObservableProperty]
@@ -95,6 +92,7 @@ public partial class LearnWordViewModel : PageViewModelBase
         _ = InitializeVocabularyAsync();
     }
 
+
     /// <summary>
     /// Nạp từ vựng khởi đầu từ cơ sở dữ liệu SQLite.
     /// Nếu cơ sở dữ liệu chưa có dữ liệu, tự động fallback về dữ liệu mẫu (mock).
@@ -119,14 +117,35 @@ public partial class LearnWordViewModel : PageViewModelBase
 
     // ──────────────────────────── Commands ──────────────────────────────────
 
+    #region RelayCommand
+
+    [RelayCommand]
+    private async Task Loaded()
+    {
+        try
+        {
+            await LoadedAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
     /// <summary>
     /// Mở Dialog chọn cấp độ CEFR để sinh từ vựng mới.
     /// </summary>
     [RelayCommand]
-    private void OpenSelectLevel()
+    private async Task OpenSelectLevel()
     {
-        var dialog = _navigator.OpenDialog<SelectLevelViewModel>();
-        dialog.VocabularyGenerated += OnVocabularyGenerated;
+        try
+        {
+            await OnOpenSelectLeverViewAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
     }
 
     /// <summary>
@@ -134,12 +153,65 @@ public partial class LearnWordViewModel : PageViewModelBase
     /// Để trống theo yêu cầu kiến trúc – sẵn sàng cho logic nghiệp vụ sau.
     /// </summary>
     [RelayCommand]
-    private void Submit()
+    private async Task Submit()
     {
-        // Để trống theo yêu cầu kiến trúc
+        try
+        {
+            await OnSubmitWordAsync();
+        }
+        catch(Exception ex)
+        {
+            throw;
+        }
     }
 
+    #endregion
     // ──────────────────────────── Event Handlers ────────────────────────────
+    #region Hàm logic nghiệp vụ
+
+    private async Task LoadedAsync()
+    {
+        try
+        {
+
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Processes a submitted word asynchronously.
+    /// </summary>
+    /// <remarks>Await the returned task to observe exceptions. Intended for use as an asynchronous event
+    /// handler invoked from the UI thread.</remarks>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    private async Task OnSubmitWordAsync()
+    {
+        try
+        {
+
+        }catch(Exception ex)
+        {
+            throw;
+        }
+    }
+
+    private async Task OnOpenSelectLeverViewAsync()
+    {
+        try
+        {
+            var dialog = _navigator.OpenDialog<SelectLevelViewModel>();
+            dialog.VocabularyGenerated += OnVocabularyGenerated;
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
+
+
 
     /// <summary>
     /// Được gọi khi SelectLevelViewModel phát ra VocabularyGenerated event.
@@ -168,21 +240,11 @@ public partial class LearnWordViewModel : PageViewModelBase
         PhoneticUK = dto.Phonetic_UK ?? string.Empty;
         PhoneticUS = dto.Phonetic_US ?? string.Empty;
         Level = dto.Level;
-        LevelBadgeColor = GetLevelColor(dto.Level);
         WordFamily = new ObservableCollection<string>(dto.WordFamily);
         Meanings = new ObservableCollection<VocabularyMeaningDto>(dto.Meanings);
     }
 
-    private static string GetLevelColor(CEFRLevel level) => level switch
-    {
-        CEFRLevel.A1 => "#16A34A",
-        CEFRLevel.A2 => "#65A30D",
-        CEFRLevel.B1 => "#CA8A04",
-        CEFRLevel.B2 => "#EA580C",
-        CEFRLevel.C1 => "#DC2626",
-        CEFRLevel.C2 => "#9333EA",
-        _            => "#6C63FF"
-    };
-
     
+
+    #endregion
 }

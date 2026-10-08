@@ -1,22 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using English.Entity.DTOs;
+using English.Entity.DTOs.ViewModelDto;
 using English.Entity.Enums;
 using English.Entity.Services;
 
 namespace English.ViewModel.ViewModels;
-
-/// <summary>
-/// Model đại diện cho một lựa chọn cấp độ CEFR trong Dialog.
-/// </summary>
-public class CEFRLevelOption
-{
-    public CEFRLevel Level { get; set; }
-    public string DisplayName { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string ColorHex { get; set; } = string.Empty;
-    public string Emoji { get; set; } = string.Empty;
-}
 
 /// <summary>
 /// ViewModel cho Dialog chọn cấp độ CEFR và kích hoạt sinh từ vựng.
@@ -24,12 +13,12 @@ public class CEFRLevelOption
 /// </summary>
 public partial class SelectLevelViewModel : DialogViewModelBase
 {
-    // ──────────────────────────── Dependencies ──────────────────────────────
 
+    #region Inject - các service cần thiết
     private readonly IVocabularyGeneratorService _vocabularyGeneratorService;
+    #endregion
 
-    // ──────────────────────────── Observable Properties ─────────────────────
-
+    #region Binding - danh sách cấp độ / trạng tái tạo từ vựng / Message lỗi
     /// <summary>Danh sách các cấp độ CEFR để hiển thị lên Dialog.</summary>
     [ObservableProperty]
     private List<CEFRLevelOption> _availableLevels = new();
@@ -47,14 +36,16 @@ public partial class SelectLevelViewModel : DialogViewModelBase
     private string _errorMessage = string.Empty;
 
     // ──────────────────────────── Events ────────────────────────────────────
+    #endregion
 
+    #region Callback - Hoàn thành lấy từ vựng
     /// <summary>
     /// Sự kiện kích hoạt khi sinh VocabularyDto hợp lệ thành công.
     /// LearnWordViewModel sẽ đăng ký lắng nghe event này.
     /// </summary>
     public event Action<VocabularyDto>? VocabularyGenerated;
-
-    // ──────────────────────────── Constructor ───────────────────────────────
+    
+    #endregion
 
     public SelectLevelViewModel(IVocabularyGeneratorService vocabularyGeneratorService)
     {
@@ -63,8 +54,22 @@ public partial class SelectLevelViewModel : DialogViewModelBase
         InitLevels();
     }
 
-    // ──────────────────────────── Commands ──────────────────────────────────
+    #region RelayCommand - Tìm kiếm từ, đóng giao diện ...
+    [RelayCommand]
+    private async Task Loaded()
+    {
+        try
+        {
 
+        }
+        catch(Exception ex)
+        {
+
+        }
+    }
+    
+    
+    
     /// <summary>
     /// Sinh từ vựng với cấp độ đã chọn và phát ra VocabularyDto khi thành công.
     /// </summary>
@@ -97,16 +102,24 @@ public partial class SelectLevelViewModel : DialogViewModelBase
 
     private bool CanConfirm() => SelectedLevel is not null && !IsLoading;
 
-    /// <summary>Người dùng click vào một ô cấp độ → cập nhật SelectedLevel.</summary>
+    /// <summary>
+    /// Người dùng click vào một ô cấp độ → cập nhật SelectedLevel.
+    /// </summary>
+    /// <param name="option">Cấp độ mà người dùng đã chọn</param>
     [RelayCommand]
     private void SelectLevel(CEFRLevelOption option)
     {
-        SelectedLevel = option;
+        
     }
 
+    #endregion
+
+    #region Callback - Sự kiện khi thay đổi Lever và 
     // Khi SelectedLevel thay đổi → cập nhật CanExecute của ConfirmCommand
     partial void OnSelectedLevelChanged(CEFRLevelOption? value)
     {
+        if (value == null) return;
+        SelectedLevel = value;
         ConfirmCommand.NotifyCanExecuteChanged();
     }
 
@@ -116,7 +129,27 @@ public partial class SelectLevelViewModel : DialogViewModelBase
         ConfirmCommand.NotifyCanExecuteChanged();
     }
 
+    #endregion
+
+    #region Function Logic - Hàm logic nghiệp vụ - tải dữ liệu / chuyển cấp độ
+
     // ──────────────────────────── Private Helpers ───────────────────────────
+
+    /// <summary>
+    /// Hàm loading ban đầu cho view
+    /// </summary>
+    /// <returns></returns>
+    private async Task LoadedAsync()
+    {
+        try
+        {
+            InitLevels();
+        }
+        catch
+        {
+            throw;
+        }
+    }
 
     private void InitLevels()
     {
@@ -136,7 +169,7 @@ public partial class SelectLevelViewModel : DialogViewModelBase
                     Description = "Thành thạo hoàn toàn", ColorHex = "#9333EA" },
         };
 
-        // Mặc định chọn B1
-        SelectedLevel = AvailableLevels.FirstOrDefault(x => x.Level == CEFRLevel.B1);
+        // Mặc định chọn A2
+        SelectedLevel = AvailableLevels.FirstOrDefault(x => x.Level == CEFRLevel.A2);
     }
 }

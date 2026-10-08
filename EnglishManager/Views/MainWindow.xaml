@@ -860,10 +860,10 @@
                                 <!-- ───────────────────────────────────────
                                      RIGHT: Result Preview Panel
                                      ─────────────────────────────────────── -->
-                                <materialDesign:Card Grid.Column="2" UniformCornerRadius="12">
+                                <materialDesign:Card Grid.Column="2" UniformCornerRadius="12" >
                                     <Grid>
                                         <!-- Trạng thái rỗng chưa có kết quả -->
-                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" 
                                                     Visibility="{Binding AiDictVM.HasResult, Converter={StaticResource BoolToVisConverter}}">
                                             <StackPanel.Style>
                                                 <Style TargetType="StackPanel">
@@ -871,6 +871,7 @@
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding AiDictVM.HasResult}" Value="True">
                                                             <Setter Property="Visibility" Value="Collapsed" />
+
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -886,9 +887,9 @@
                                         </StackPanel>
 
                                         <!-- Kết quả xem trước -->
-                                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24"
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24" 
                                                       Visibility="{Binding AiDictVM.HasResult, Converter={StaticResource BoolToVisConverter}}">
-                                            <StackPanel>
+                                            <StackPanel Margin="15">
 
                                                 <!-- ── WORD HEADER ── -->
                                                 <Border Background="#F3EDF7" CornerRadius="12" Padding="20,16" Margin="0,0,0,16">

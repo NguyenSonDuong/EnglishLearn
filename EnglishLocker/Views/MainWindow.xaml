@@ -23,9 +23,7 @@
 
     <Window.Resources>
         <!-- ── DataTemplate mapping cho các Page UserControl ── -->
-        <DataTemplate DataType="{x:Type vm:QuizViewModel}">
-            <views:QuizControl/>
-        </DataTemplate>
+
         <DataTemplate DataType="{x:Type vm:LearnWordViewModel}">
             <views:LearnWordControl/>
         </DataTemplate>

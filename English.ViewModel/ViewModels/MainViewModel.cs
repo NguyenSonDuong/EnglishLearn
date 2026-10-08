@@ -29,10 +29,6 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isUnlocked;
 
-    /// <summary>
-    /// Cho biết hệ thống đã được mở khóa hay chưa (ủy quyền cho QuizViewModel nếu đang hiển thị).
-    /// </summary>
-    public bool UnlockedState => (_navigator.CurrentPage as QuizViewModel)?.IsUnlocked ?? IsUnlocked;
 
     // ──────────────────────────── Constructor ───────────────────────────────
 
@@ -68,16 +64,6 @@ public partial class MainViewModel : ObservableObject
 
     // ──────────────────────────── Anti-Cheat ────────────────────────────────
 
-    /// <summary>
-    /// Được gọi từ MainWindow.OnClosing khi phát hiện user cố tắt cửa sổ mà chưa mở khóa.
-    /// </summary>
-    public void OnCheatDetected()
-    {
-        if (_navigator.CurrentPage is QuizViewModel quizVm)
-        {
-            quizVm.OnCheatDetected();
-        }
-    }
 
     // ──────────────────────────── Dialog & Screen Navigation ────────────────
 
