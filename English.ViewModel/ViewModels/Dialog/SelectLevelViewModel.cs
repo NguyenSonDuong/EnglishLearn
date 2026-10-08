@@ -4,6 +4,7 @@ using English.Entity.DTOs;
 using English.Entity.DTOs.ViewModelDto;
 using English.Entity.Enums;
 using English.Entity.Services;
+using English.ViewModel.VMException;
 
 namespace English.ViewModel.ViewModels;
 
@@ -76,28 +77,7 @@ public partial class SelectLevelViewModel : DialogViewModelBase
     [RelayCommand(CanExecute = nameof(CanConfirm))]
     private async Task ConfirmAsync()
     {
-        if (SelectedLevel is null) return;
-
-        IsLoading = true;
-        ErrorMessage = string.Empty;
-
-        try
-        {
-            var dto = await _vocabularyGeneratorService.GenerateVocabularyAsync(SelectedLevel.Level);
-
-            if (dto is null)
-            {
-                ErrorMessage = "⚠ Không thể tạo từ vựng. Vui lòng thử lại.";
-                return;
-            }
-
-            VocabularyGenerated?.Invoke(dto);
-            Close();
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        
     }
 
     private bool CanConfirm() => SelectedLevel is not null && !IsLoading;
@@ -109,20 +89,14 @@ public partial class SelectLevelViewModel : DialogViewModelBase
     [RelayCommand]
     private void SelectLevel(CEFRLevelOption option)
     {
-        
+        SelectedLevel = option;
+        ConfirmCommand.NotifyCanExecuteChanged();
     }
 
     #endregion
 
-    #region Callback - Sự kiện khi thay đổi Lever và 
-    // Khi SelectedLevel thay đổi → cập nhật CanExecute của ConfirmCommand
-    partial void OnSelectedLevelChanged(CEFRLevelOption? value)
-    {
-        if (value == null) return;
-        SelectedLevel = value;
-        ConfirmCommand.NotifyCanExecuteChanged();
-    }
-
+    #region Callback - Sự kiện khi thay đổi Level và 
+    
     // Khi IsLoading thay đổi → cập nhật CanExecute của ConfirmCommand
     partial void OnIsLoadingChanged(bool value)
     {
@@ -150,7 +124,37 @@ public partial class SelectLevelViewModel : DialogViewModelBase
             throw;
         }
     }
+    private async Task SubmitLoadVocabularyAsync()
+    {
+        try
+        {
+            if (SelectedLevel is null) return;
 
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+
+            try
+            {
+                var dto = await _vocabularyGeneratorService.GenerateVocabularyAsync(SelectedLevel.Level);
+
+                if (dto is null)
+                {
+                    throw new DataException("⚠ Không thể tạo từ vựng.Vui lòng thử lại.");
+                }
+
+                VocabularyGenerated?.Invoke(dto);
+                Close();
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+        catch
+        {
+            throw;
+        }
+    }
     private void InitLevels()
     {
         AvailableLevels = new List<CEFRLevelOption>
