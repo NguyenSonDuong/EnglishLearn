@@ -1,15 +1,13 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using English.Entity.DTOs;
-using English.Entity.Enums;
 using English.Entity.Services;
 
 namespace English.ViewModel.ViewModels;
 
 /// <summary>
-/// ViewModel quản lý chức năng học và luyện gõ từ mới.
-/// Binding đầy đủ với VocabularyDto: WordText, Phonetics, WordFamily, Meanings (Synonyms, Antonyms, Examples).
+/// ViewModel quản lý trang học và luyện gõ từ mới.
+/// Điều phối giữa hai thành phần: Information Panel (thông tin từ) và Action Panel (Action Tab động).
 /// Kế thừa PageViewModelBase để đồng bộ điều hướng SPA trong MainWindow.
 /// </summary>
 public partial class LearnWordViewModel : PageViewModelBase
@@ -18,98 +16,158 @@ public partial class LearnWordViewModel : PageViewModelBase
 
     private readonly INavigatorService _navigator;
     private readonly IVocabularyGeneratorService _vocabularyGeneratorService;
+    private readonly LearnWordInformationViewModel _informationViewModel;
+    private readonly IServiceProvider _serviceProvider;
 
-    // ──────────────────────────── Internal State ────────────────────────────
+    // ──────────────────────────── Observable Properties ─────────────────────
 
-    private VocabularyDto? _currentVocabularyDto;
+    /// <summary>ViewModel hiển thị thông tin chi tiết từ vựng (Information Panel).</summary>
+    public LearnWordInformationViewModel InformationViewModel => _informationViewModel;
 
-    // ──────────────────────────── Observable Properties (Từ vựng) ───────────
-
-    /// <summary>Từ tiếng Anh gốc cần học.</summary>
+    /// <summary>ViewModel của Action Tab hiện đang được kích hoạt và hiển thị.</summary>
     [ObservableProperty]
-    private string _wordText = string.Empty;
-
-    /// <summary>Mô tả ý nghĩa chung, bản chất của từ vựng.</summary>
-    [ObservableProperty]
-    private string _description = string.Empty;
-
-    /// <summary>Phiên âm Anh-Anh (UK).</summary>
-    [ObservableProperty]
-    private string _phoneticUK = string.Empty;
-
-    /// <summary>Phiên âm Anh-Mỹ (US).</summary>
-    [ObservableProperty]
-    private string _phoneticUS = string.Empty;
-
-    /// <summary>Danh sách các dạng từ họ hàng (WordFamily).</summary>
-    [ObservableProperty]
-    private ObservableCollection<string> _wordFamily = new();
-
-    /// <summary>Cấp độ CEFR của từ vựng.</summary>
-    [ObservableProperty]
-    private CEFRLevel _level = CEFRLevel.Uncategorized;
-
-
-    /// <summary>Danh sách các nghĩa đầy đủ (VocabularyMeaningDto).</summary>
-    [ObservableProperty]
-    private ObservableCollection<VocabularyMeaningDto> _meanings = new();
-
-    // ──────────────────────────── Observable Properties (Luyện gõ) ──────────
-
-    /// <summary>Nội dung người dùng đang gõ trong ô nhập liệu.</summary>
-    [ObservableProperty]
-    private string _userInput = string.Empty;
-
-    /// <summary>Lần gõ chính xác hiện tại.</summary>
-    [ObservableProperty]
-    private int _currentAttempt;
-
-    /// <summary>Tổng số lần cần gõ hoàn thành (mặc định 10).</summary>
-    [ObservableProperty]
-    private int _targetAttempts = 10;
-
-    /// <summary>Cờ điều khiển việc ẩn/hiện từ gốc ở khu vực luyện gõ.</summary>
-    [ObservableProperty]
-    private bool _isWordVisible = true;
-
-    /// <summary>Thông báo trạng thái phản hồi cho người dùng.</summary>
-    [ObservableProperty]
-    private string _feedbackMessage = "💡 Hãy nhìn kỹ từ và gõ lại thật chính xác vào ô bên dưới.";
-
-    /// <summary>Mã màu hex cho thông báo phản hồi.</summary>
-    [ObservableProperty]
-    private string _feedbackColor = "#6C63FF";
+    private object? _actionViewModel;
 
     // ──────────────────────────── Constructor ───────────────────────────────
 
     public LearnWordViewModel(
         INavigatorService navigator,
-        IVocabularyGeneratorService vocabularyGeneratorService)
+        IVocabularyGeneratorService vocabularyGeneratorService,
+        LearnWordInformationViewModel informationViewModel,
+        IServiceProvider serviceProvider)
     {
         _navigator = navigator;
         _vocabularyGeneratorService = vocabularyGeneratorService;
+        _informationViewModel = informationViewModel;
+        _serviceProvider = serviceProvider;
+
         PageTitle = "Học Từ Mới";
+
+        _informationViewModel.VocabularyChanged += OnVocabularyChanged;
+
+        // Khởi tạo tab Action mặc định ban đầu
+        SwitchActionTab<LearnWordActionViewModel>();
+
         _ = InitializeVocabularyAsync();
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    #region Tab Switching / Quản lý Chuyển đổi Action Tab
+    // ═══════════════════════════════════════════════════════════════════════
 
-   
+    /// <summary>
+    /// Chuyển đổi Action Tab sang một ViewModel khác chỉ bằng việc truyền class ViewModel.
+    /// Tab cũ sẽ bị hủy liên kết, vô hiệu hóa, giải phóng và dọn dẹp sạch sẽ như thể chưa từng tồn tại.
+    /// </summary>
+    /// <typeparam name="TViewModel">Class của ViewModel Tab cần chuyển sang.</typeparam>
+    /// <param name="configure">Delegate tùy chọn để cấu hình ViewModel mới trước khi hiển thị.</param>
+    /// <returns>Instance của ViewModel mới được khởi tạo và kích hoạt.</returns>
+    public TViewModel SwitchActionTab<TViewModel>(Action<TViewModel>? configure = null) where TViewModel : class
+    {
+        // 1. Dọn dẹp, disable và giải phóng sạch sẽ tab cũ
+        ClearCurrentActionTab();
+
+        // 2. Khởi tạo instance mới từ DI Container hoặc Activator
+        TViewModel newTabInstance = ResolveTabViewModel<TViewModel>();
+
+        // 3. Cấu hình bổ sung nếu có
+        configure?.Invoke(newTabInstance);
+
+        // 4. Kết nối logic và sự kiện cần thiết cho tab mới
+        AttachActionTab(newTabInstance);
+
+        // 5. Cập nhật thuộc tính hiển thị lên giao diện
+        ActionViewModel = newTabInstance;
+
+        return newTabInstance;
+    }
+
+    /// <summary>
+    /// Chuyển đổi Action Tab theo Type (Non-generic overload).
+    /// </summary>
+    /// <param name="viewModelType">Type của ViewModel Tab cần chuyển sang.</param>
+    /// <param name="configure">Delegate cấu hình bổ sung.</param>
+    /// <returns>Instance của ViewModel mới được kích hoạt.</returns>
+    public object SwitchActionTab(Type viewModelType, Action<object>? configure = null)
+    {
+        ArgumentNullException.ThrowIfNull(viewModelType);
+
+        ClearCurrentActionTab();
+
+        object newTabInstance = ResolveTabViewModel(viewModelType);
+
+        configure?.Invoke(newTabInstance);
+
+        AttachActionTab(newTabInstance);
+
+        ActionViewModel = newTabInstance;
+
+        return newTabInstance;
+    }
+
+    /// <summary>
+    /// Vô hiệu hóa, hủy toàn bộ event subscription và dọn dẹp sạch sẽ tab cũ như thể nó chưa từng tồn tại.
+    /// </summary>
+    private void ClearCurrentActionTab()
+    {
+        if (ActionViewModel == null) return;
+
+        // Gỡ bỏ sự kiện nếu tab cũ là LearnWordActionViewModel
+        if (ActionViewModel is LearnWordActionViewModel oldActionVm)
+        {
+            oldActionVm.WordVisibilityChanged -= OnWordVisibilityChanged;
+            oldActionVm.WordCompleted -= OnWordCompletedAsync;
+        }
+
+        // Gọi Dispose nếu tab cũ hỗ trợ dọn dẹp tài nguyên
+        if (ActionViewModel is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
+
+        // Xóa hoàn toàn tham chiếu
+        ActionViewModel = null;
+    }
+
+    /// <summary>
+    /// Phân giải ViewModel từ DI Container hoặc Activator.
+    /// </summary>
+    private TViewModel ResolveTabViewModel<TViewModel>() where TViewModel : class
+    {
+        return (TViewModel)ResolveTabViewModel(typeof(TViewModel));
+    }
+
+    private object ResolveTabViewModel(Type viewModelType)
+    {
+        object? instance = _serviceProvider.GetService(viewModelType);
+        if (instance != null) return instance;
+
+        return Activator.CreateInstance(viewModelType)
+            ?? throw new InvalidOperationException($"Không thể khởi tạo tab ViewModel '{viewModelType.FullName}'.");
+    }
+
+    /// <summary>
+    /// Gắn các liên kết sự kiện và truyền dữ liệu cần thiết cho Action Tab mới.
+    /// </summary>
+    private void AttachActionTab(object tabInstance)
+    {
+        if (tabInstance is LearnWordActionViewModel actionVm)
+        {
+            actionVm.WordVisibilityChanged += OnWordVisibilityChanged;
+            actionVm.WordCompleted += OnWordCompletedAsync;
+
+            // Đồng bộ từ hiện tại nếu InformationViewModel đã có dữ liệu
+            if (!string.IsNullOrEmpty(_informationViewModel.WordText))
+            {
+                actionVm.SetupWord(_informationViewModel.WordText);
+            }
+        }
+    }
+
+    #endregion
 
     // ──────────────────────────── Commands ──────────────────────────────────
 
-    #region RelayCommand
-    [RelayCommand]
-    private async Task ReloadVocabury()
-    {
-        try
-        {
-            await InitializeVocabularyAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
     [RelayCommand]
     private async Task Loaded()
     {
@@ -117,172 +175,73 @@ public partial class LearnWordViewModel : PageViewModelBase
         {
             await LoadedAsync();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
     }
 
-    /// <summary>
-    /// Mở Dialog chọn cấp độ CEFR để sinh từ vựng mới.
-    /// </summary>
-    [RelayCommand]
-    private async Task OpenSelectLevel()
-    {
-        try
-        {
-            await OnOpenSelectLeverViewAsync();
-        }
-        catch (Exception ex)
-        {
-            throw;
-        }
-    }
+    // ──────────────────────────── Private Methods ───────────────────────────
 
-    /// <summary>
-    /// Xử lý khi người dùng nhấn Enter hoặc nhấn nút Xác nhận.
-    /// Để trống theo yêu cầu kiến trúc – sẵn sàng cho logic nghiệp vụ sau.
-    /// </summary>
-    [RelayCommand]
-    private async Task Submit()
-    {
-        try
-        {
-            await OnSubmitWordAsync();
-        }
-        catch(Exception ex)
-        {
-            throw;
-        }
-    }
-
-    #endregion
-    // ──────────────────────────── Event Handlers ────────────────────────────
-    #region Hàm logic nghiệp vụ
-    /// <summary>
-    /// Nạp từ vựng khởi đầu từ cơ sở dữ liệu SQLite.
-    /// Nếu cơ sở dữ liệu chưa có dữ liệu, tự động fallback về dữ liệu mẫu (mock).
-    /// </summary>
-    private async Task InitializeVocabularyAsync()
-    {
-        try
-        {
-            var dto = await _vocabularyGeneratorService.GenerateVocabularyAsync(Level);
-            if (dto != null)
-            {
-                LoadVocabularyDto(dto);
-                return;
-            }
-        }
-        catch
-        {
-            // Bỏ qua lỗi và chuyển sang nạp mock
-        }
-
-    }
-    /// <summary>
-    /// Gọi load các dữ liệu ban đầu
-    /// </summary>
-    /// <returns></returns>
     private async Task LoadedAsync()
     {
         try
         {
             await InitializeVocabularyAsync();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             throw;
         }
     }
 
     /// <summary>
-    /// Processes a submitted word asynchronously.
+    /// Nạp từ vựng ban đầu từ cơ sở dữ liệu SQLite và truyền cho các Sub-ViewModels.
     /// </summary>
-    /// <remarks>Await the returned task to observe exceptions. Intended for use as an asynchronous event
-    /// handler invoked from the UI thread.</remarks>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    private async Task OnSubmitWordAsync()
+    private async Task InitializeVocabularyAsync()
     {
         try
         {
-            if(UserInput == WordText)
+            var dto = await _vocabularyGeneratorService.GenerateVocabularyAsync(_informationViewModel.Level);
+            if (dto != null)
             {
-                CurrentAttempt++;
-                if (CurrentAttempt > 3)
+                _informationViewModel.LoadVocabularyDto(dto);
+                if (ActionViewModel is LearnWordActionViewModel actionVm)
                 {
-                    IsWordVisible = false;
-                }
-                if(CurrentAttempt == TargetAttempts)
-                {
-                    CurrentAttempt = 0;
-                    TargetAttempts = 10;
-                    IsWordVisible = true;
-                    await InitializeVocabularyAsync();
+                    actionVm.SetupWord(dto.WordText);
                 }
             }
-            else
-            {
-                TargetAttempts += 2;
-                CurrentAttempt -= 3; 
-            }
-            UserInput = string.Empty;
         }
-        catch(Exception ex)
+        catch (Exception)
         {
-            throw;
+            // Bỏ qua lỗi kết nối / DB fallback
         }
     }
 
     /// <summary>
-    /// Mở view để lựa chọn từ theo cấp độ
+    /// Đồng bộ khi InformationViewModel nạp hoặc đổi từ mới.
     /// </summary>
-    /// <returns></returns>
-    private async Task OnOpenSelectLeverViewAsync()
+    private void OnVocabularyChanged(VocabularyDto dto)
     {
-        try
+        if (ActionViewModel is LearnWordActionViewModel actionVm)
         {
-            var dialog = _navigator.OpenDialog<SelectLevelViewModel>();
-            dialog.VocabularyGenerated += OnVocabularyGenerated;
-        }
-        catch (Exception ex)
-        {
-            throw;
+            actionVm.SetupWord(dto.WordText);
         }
     }
 
-
-
     /// <summary>
-    /// Được gọi khi SelectLevelViewModel phát ra VocabularyGenerated event.
-    /// Cập nhật toàn bộ Observable Properties từ VocabularyDto mới.
+    /// Đồng bộ ẩn/hiện thông tin chi tiết từ khi Action Tab yêu cầu.
     /// </summary>
-    private void OnVocabularyGenerated(VocabularyDto dto)
+    private void OnWordVisibilityChanged(bool isVisible)
     {
-        LoadVocabularyDto(dto);
-        CurrentAttempt = 0;
-        UserInput = string.Empty;
-        FeedbackMessage = $"✨ Đã tải từ mới: \"{dto.WordText}\" — Hãy luyện gõ từ này!";
-        FeedbackColor = "#22C55E";
+        _informationViewModel.IsWordVisible = isVisible;
     }
 
-    // ──────────────────────────── Vocabulary Loader ─────────────────────────
-
     /// <summary>
-    /// Map đầy đủ các trường của VocabularyDto vào các Observable Properties.
+    /// Tự động nạp từ mới khi người dùng hoàn thành số lượt gõ yêu cầu.
     /// </summary>
-    private void LoadVocabularyDto(VocabularyDto dto)
+    private async Task OnWordCompletedAsync()
     {
-        _currentVocabularyDto = dto;
-
-        WordText = dto.WordText;
-        Description = dto.Description ?? string.Empty;
-        PhoneticUK = dto.Phonetic_UK ?? string.Empty;
-        PhoneticUS = dto.Phonetic_US ?? string.Empty;
-        Level = dto.Level;
-        WordFamily = new ObservableCollection<string>(dto.WordFamily);
-        Meanings = new ObservableCollection<VocabularyMeaningDto>(dto.Meanings);
+        await InitializeVocabularyAsync();
     }
-
-    #endregion
 }

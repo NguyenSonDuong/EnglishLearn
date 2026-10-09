@@ -63,7 +63,7 @@ public partial class SelectLevelViewModel : DialogViewModelBase
         {
             await LoadedAsync();
         }
-        catch(Exception ex)
+        catch(Exception)
         {
 
         }
@@ -81,7 +81,7 @@ public partial class SelectLevelViewModel : DialogViewModelBase
         {
             await SubmitLoadVocabularyAsync();
         }
-        catch(Exception ex)
+        catch(Exception)
         {
 
         }
