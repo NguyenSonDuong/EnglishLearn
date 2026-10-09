@@ -17,6 +17,7 @@
     </i:Interaction.Triggers>
     <UserControl.Resources>
         <conv:CEFRToSolidBrushConverter x:Key="CEFRToBrushConverter"/>
+        <conv:CEFRToSolidBrushConverter x:Key="StringToBrushConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
         <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
@@ -59,7 +60,7 @@
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="levelBorder" Property="Background" Value="#252542"/>
                                 <Setter TargetName="levelBorder" Property="BorderBrush"
-                                        Value="{Binding Level, Converter={StaticResource StringToBrushConverter}}"/>
+                                        Value="{Binding Level, Converter={StaticResource CEFRToBrushConverter}}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
                                 <Setter TargetName="levelBorder" Property="Background" Value="#1E1E38"/>
@@ -211,7 +212,7 @@
                                                     </MultiBinding>
                                                 </DataTrigger.Binding>
                                                 <Setter Property="BorderBrush"
-                                                        Value="{Binding ColorHex, Converter={StaticResource StringToBrushConverter}}"/>
+                                                        Value="{Binding ColorHex, Converter={StaticResource CEFRToBrushConverter}}"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -238,7 +239,7 @@
                         <Border CornerRadius="6"
                                 Padding="10,3"
                                 Margin="6,0,0,0"
-                                Background="{Binding SelectedLevel.ColorHex, Converter={StaticResource StringToBrushConverter}}">
+                                Background="{Binding SelectedLevel.ColorHex, Converter={StaticResource CEFRToBrushConverter}}">
                             <TextBlock Text="{Binding SelectedLevel.DisplayName}"
                                        Foreground="White"
                                        FontSize="14"

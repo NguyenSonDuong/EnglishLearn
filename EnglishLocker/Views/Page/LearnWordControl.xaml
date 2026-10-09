@@ -177,10 +177,19 @@
                                 </StackPanel>
 
                                 <!-- Nút Đổi Cấp Độ - góc phải -->
-                                <Button Content="🎯 Đổi Cấp Độ"
+                                <StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+                                    <Button Content="🎯 Đổi Cấp Độ"
+                                            Margin="5"
                                         Style="{StaticResource OutlineButton}"
                                         Command="{Binding OpenSelectLevelCommand}"
-                                        HorizontalAlignment="Right"/>
+                                       />
+                                    <Button Content="🔃 Đổi từ mới"
+                                        BorderBrush="White"
+                                        Foreground="White"
+                                             Margin="5"
+                                        Style="{StaticResource OutlineButton}"
+                                        Command="{Binding ReloadVocaburyCommand}"/>                   
+                                </StackPanel>
                             </Grid>
 
                             <!-- WordText Typography lớn -->

@@ -93,32 +93,23 @@ public partial class LearnWordViewModel : PageViewModelBase
     }
 
 
-    /// <summary>
-    /// Nạp từ vựng khởi đầu từ cơ sở dữ liệu SQLite.
-    /// Nếu cơ sở dữ liệu chưa có dữ liệu, tự động fallback về dữ liệu mẫu (mock).
-    /// </summary>
-    private async Task InitializeVocabularyAsync()
-    {
-        try
-        {
-            var dto = await _vocabularyGeneratorService.GenerateVocabularyAsync(CEFRLevel.B2);
-            if (dto != null)
-            {
-                LoadVocabularyDto(dto);
-                return;
-            }
-        }
-        catch
-        {
-            // Bỏ qua lỗi và chuyển sang nạp mock
-        }
-
-    }
+   
 
     // ──────────────────────────── Commands ──────────────────────────────────
 
     #region RelayCommand
-
+    [RelayCommand]
+    private async Task ReloadVocabury()
+    {
+        try
+        {
+            await InitializeVocabularyAsync();
+        }
+        catch (Exception ex)
+        {
+            throw;
+        }
+    }
     [RelayCommand]
     private async Task Loaded()
     {
@@ -168,12 +159,36 @@ public partial class LearnWordViewModel : PageViewModelBase
     #endregion
     // ──────────────────────────── Event Handlers ────────────────────────────
     #region Hàm logic nghiệp vụ
+    /// <summary>
+    /// Nạp từ vựng khởi đầu từ cơ sở dữ liệu SQLite.
+    /// Nếu cơ sở dữ liệu chưa có dữ liệu, tự động fallback về dữ liệu mẫu (mock).
+    /// </summary>
+    private async Task InitializeVocabularyAsync()
+    {
+        try
+        {
+            var dto = await _vocabularyGeneratorService.GenerateVocabularyAsync(Level);
+            if (dto != null)
+            {
+                LoadVocabularyDto(dto);
+                return;
+            }
+        }
+        catch
+        {
+            // Bỏ qua lỗi và chuyển sang nạp mock
+        }
 
+    }
+    /// <summary>
+    /// Gọi load các dữ liệu ban đầu
+    /// </summary>
+    /// <returns></returns>
     private async Task LoadedAsync()
     {
         try
         {
-
+            await InitializeVocabularyAsync();
         }
         catch (Exception ex)
         {
@@ -191,13 +206,38 @@ public partial class LearnWordViewModel : PageViewModelBase
     {
         try
         {
-
-        }catch(Exception ex)
+            if(UserInput == WordText)
+            {
+                CurrentAttempt++;
+                if (CurrentAttempt > 3)
+                {
+                    IsWordVisible = false;
+                }
+                if(CurrentAttempt == TargetAttempts)
+                {
+                    CurrentAttempt = 0;
+                    TargetAttempts = 10;
+                    IsWordVisible = true;
+                    await InitializeVocabularyAsync();
+                }
+            }
+            else
+            {
+                TargetAttempts += 2;
+                CurrentAttempt -= 3; 
+            }
+            UserInput = string.Empty;
+        }
+        catch(Exception ex)
         {
             throw;
         }
     }
 
+    /// <summary>
+    /// Mở view để lựa chọn từ theo cấp độ
+    /// </summary>
+    /// <returns></returns>
     private async Task OnOpenSelectLeverViewAsync()
     {
         try
@@ -243,8 +283,6 @@ public partial class LearnWordViewModel : PageViewModelBase
         WordFamily = new ObservableCollection<string>(dto.WordFamily);
         Meanings = new ObservableCollection<VocabularyMeaningDto>(dto.Meanings);
     }
-
-    
 
     #endregion
 }

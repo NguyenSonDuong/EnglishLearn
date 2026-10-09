@@ -61,7 +61,7 @@ public partial class SelectLevelViewModel : DialogViewModelBase
     {
         try
         {
-
+            await LoadedAsync();
         }
         catch(Exception ex)
         {
@@ -77,7 +77,14 @@ public partial class SelectLevelViewModel : DialogViewModelBase
     [RelayCommand(CanExecute = nameof(CanConfirm))]
     private async Task ConfirmAsync()
     {
-        
+        try
+        {
+            await SubmitLoadVocabularyAsync();
+        }
+        catch(Exception ex)
+        {
+
+        }
     }
 
     private bool CanConfirm() => SelectedLevel is not null && !IsLoading;
@@ -176,4 +183,6 @@ public partial class SelectLevelViewModel : DialogViewModelBase
         // Mặc định chọn A2
         SelectedLevel = AvailableLevels.FirstOrDefault(x => x.Level == CEFRLevel.A2);
     }
+
+    #endregion
 }

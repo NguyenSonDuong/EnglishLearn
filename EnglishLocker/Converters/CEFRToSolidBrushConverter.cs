@@ -14,11 +14,23 @@ public class CEFRToSolidBrushConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is CEFRLevel lever)
+        if (value is CEFRLevel level)
         {
             try
             {
-                var color = (Color)ColorConverter.ConvertFromString(GetLevelColor(lever));
+                var color = (Color)ColorConverter.ConvertFromString(GetLevelColor(level));
+                return new SolidColorBrush(color);
+            }
+            catch
+            {
+                // Nếu không parse được, trả về màu mặc định
+            }
+        }
+        else if (value is string hex && !string.IsNullOrWhiteSpace(hex))
+        {
+            try
+            {
+                var color = (Color)ColorConverter.ConvertFromString(hex);
                 return new SolidColorBrush(color);
             }
             catch

@@ -48,7 +48,7 @@ public class VocabularyRepository : Repository<Vocabulary>, IVocabularyRepositor
         }
 
         // 3. Chọn ngẫu nhiên 1 phần tử
-        var skip = Random.Shared.Next(0, count);
+        var skip = new Random().Next(0, count);
         return await query.Skip(skip).FirstOrDefaultAsync();
     }
 

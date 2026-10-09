@@ -14,6 +14,7 @@
         <conv:CheatCountToVisibilityConverter x:Key="CheatVisibilityConverter"/>
         <conv:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
         <conv:CEFRToSolidBrushConverter x:Key="CEFRToBrushConverter"/>
+        <conv:CEFRToSolidBrushConverter x:Key="StringToBrushConverter"/>
         <conv:InverseBoolConverter x:Key="InverseBoolConverter"/>
         <conv:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisConverter"/>
         <conv:WordClassToStringConverter x:Key="WordClassToStrConverter"/>
